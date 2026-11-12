@@ -1,0 +1,532 @@
+{
+  "corpus_files": [
+    "挖掘机维修案例(样例）.pdf",
+    "eval/data/1.pptx",
+    "eval/data/3系统总线.pptx",
+    "eval/data/6计算机的运算方法1.pptx",
+    "eval/data/7指令系统.pptx",
+    "eval/data/8CPU的结构和功能.pptx",
+    "eval/data/gzx9控制单元的功能.pptx",
+    "eval/data/数据库课程设计题目汇总-2024.pdf"
+  ],
+  "dataset": "eval/golden_qa.jsonl",
+  "model_choice": "ollama",
+  "judge_requested": "auto",
+  "judge_model": "deepseek",
+  "judge_fallback_model": "glm",
+  "limit": 10,
+  "metrics": {
+    "token_f1": 0.4051386681834611,
+    "citation_precision": 0.8,
+    "citation_recall": 0.7,
+    "refusal_rate": 0.0,
+    "retrieval_hit_rate": 1.0,
+    "citation_adherence_rate": 1.0,
+    "mean_answer_chars": 28.5,
+    "correctness_rate": 0.5,
+    "mean_correctness_score": 3.5,
+    "faithfulness_rate": 0.7,
+    "unsupported_claim_count": 4,
+    "citation_support_rate": 0.6666666666666666,
+    "judge_error_rate": 0.0,
+    "judge_fallback_rate": 0.2
+  },
+  "per_query": [
+    {
+      "id": "blue-smoke-causes",
+      "question": "发动机冒蓝烟的可能故障原因有哪些？",
+      "token_f1": 0.380952380952381,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "cited_ids": [
+        "S1"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005",
+        "doc_000_chunk_006",
+        "doc_007_chunk_006",
+        "doc_007_chunk_007",
+        "doc_007_chunk_018",
+        "doc_007_chunk_029"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 18,
+      "refused": false,
+      "answer_preview": "可能原因包括油品问题和缸压不足  。",
+      "judge_model": "glm",
+      "correct": false,
+      "correctness_score": 3.0,
+      "faithful": true,
+      "unsupported_claims": [],
+      "citation_support": [
+        {
+          "citation": "S1",
+          "supported": true,
+          "reason": "S1 明确列出冒蓝烟可能原因包括油品有问题和缸压不够"
+        }
+      ],
+      "judge_reason": "候选答案内容真实且被 S1 支持，但只覆盖参考答案四个原因中的两个（遗漏喷油器和泵问题），召回不完整。",
+      "judge_error": null,
+      "judge_fallback_used": true,
+      "judge_primary_error": "Extra data: line 1 column 245 (char 244)"
+    },
+    {
+      "id": "blue-smoke-repair",
+      "question": "发动机冒蓝烟最终更换了什么部件？",
+      "token_f1": 0.6666666666666666,
+      "citation_precision": 1.0,
+      "citation_recall": 0.5,
+      "cited_ids": [
+        "S1"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005",
+        "doc_000_chunk_006"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001"
+      ],
+      "relevant_chunks": 2,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 11,
+      "refused": false,
+      "answer_preview": "最终更换了喷油器  。",
+      "judge_model": "deepseek",
+      "correct": true,
+      "correctness_score": 5.0,
+      "faithful": true,
+      "unsupported_claims": [],
+      "citation_support": [
+        {
+          "citation": "S1",
+          "supported": true,
+          "reason": "S1明确记载检查排除后判断为喷油器问题，并更换喷油器排除故障。"
+        }
+      ],
+      "judge_reason": "候选答案与参考答案一致，且有检索上下文S1直接支持。",
+      "judge_error": null,
+      "judge_fallback_used": false,
+      "judge_primary_error": null
+    },
+    {
+      "id": "blue-smoke-cylinder",
+      "question": "发动机冒蓝烟案例中，断缸测试发现哪一缸缺缸？",
+      "token_f1": 0.6666666666666666,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "cited_ids": [
+        "S1"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_002",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005",
+        "doc_000_chunk_006"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 13,
+      "refused": false,
+      "answer_preview": "断缸测试发现4缸缺缸  。",
+      "judge_model": "deepseek",
+      "correct": true,
+      "correctness_score": 5.0,
+      "faithful": true,
+      "unsupported_claims": [],
+      "citation_support": [
+        {
+          "citation": "S1",
+          "supported": true,
+          "reason": "S1明确记载断缸测试发现发动机4缸缺缸，直接支持候选答案。"
+        }
+      ],
+      "judge_reason": "候选答案与参考答案一致，且S1原文明确支持断缸测试发现4缸缺缸。",
+      "judge_error": null,
+      "judge_fallback_used": false,
+      "judge_primary_error": null
+    },
+    {
+      "id": "blue-smoke-analysis",
+      "question": "发动机冒蓝烟的故障现象分析是什么？",
+      "token_f1": 0.2962962962962963,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "cited_ids": [
+        "S1"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005",
+        "doc_000_chunk_006",
+        "doc_007_chunk_006",
+        "doc_007_chunk_007",
+        "doc_007_chunk_018",
+        "doc_007_chunk_029"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 18,
+      "refused": false,
+      "answer_preview": "可能原因包括油品问题和缸压不足  。",
+      "judge_model": "deepseek",
+      "correct": false,
+      "correctness_score": 3.0,
+      "faithful": true,
+      "unsupported_claims": [],
+      "citation_support": [
+        {
+          "citation": "S1",
+          "supported": true,
+          "reason": "S1明确列出可能故障原因包括油品有问题和缸压不够，支持候选答案。"
+        }
+      ],
+      "judge_reason": "候选答案可由S1支持，但相较参考答案遗漏喷油器雾化不良及冒蓝烟、柴油味重、燃油不充分燃烧等现象，仅部分正确。",
+      "judge_error": null,
+      "judge_fallback_used": false,
+      "judge_primary_error": null
+    },
+    {
+      "id": "blue-smoke-prevention",
+      "question": "发动机冒蓝烟案例的预防再发建议是什么？",
+      "token_f1": 0.32,
+      "citation_precision": 0.0,
+      "citation_recall": 0.0,
+      "cited_ids": [
+        "S1"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_006"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005",
+        "doc_000_chunk_006"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_001"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 41,
+      "refused": false,
+      "answer_preview": "可能原因包括油品问题和缸压不足  。预防再发建议是平时做好油品使用和检查缸压  。",
+      "judge_model": "deepseek",
+      "correct": false,
+      "correctness_score": 3.0,
+      "faithful": false,
+      "unsupported_claims": [
+        "预防再发建议包括检查缸压"
+      ],
+      "citation_support": [
+        {
+          "citation": "S1",
+          "supported": false,
+          "reason": "S1讨论的是偶发不冒烟及低压油路检查，不支持冒蓝烟可能原因包括油品问题和缸压不足。"
+        },
+        {
+          "citation": "S1",
+          "supported": false,
+          "reason": "S1未提到预防再发建议为平时做好油品使用或检查缸压，其建议是按原理逐步分析并先排除低压油路问题。"
+        }
+      ],
+      "judge_reason": "参考答案仅要求“平时做好油品使用”，候选答案加入未被上下文支持的“检查缸压”，且引用S1不支持该冒蓝烟案例的预防建议。",
+      "judge_error": null,
+      "judge_fallback_used": false,
+      "judge_primary_error": null
+    },
+    {
+      "id": "idle-causes",
+      "question": "挖机60E怠速抖动大的可能原因有哪些？",
+      "token_f1": 0.0,
+      "citation_precision": 1.0,
+      "citation_recall": 0.5,
+      "cited_ids": [
+        "S1"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_001"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_002",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005",
+        "doc_007_chunk_006",
+        "doc_007_chunk_007",
+        "doc_007_chunk_018",
+        "doc_007_chunk_029"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_001",
+        "doc_000_chunk_002"
+      ],
+      "relevant_chunks": 2,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 18,
+      "refused": false,
+      "answer_preview": "可能原因包括油品问题和缸压不足  。",
+      "judge_model": "deepseek",
+      "correct": false,
+      "correctness_score": 1.0,
+      "faithful": false,
+      "unsupported_claims": [
+        "油品问题",
+        "缸压不足"
+      ],
+      "citation_support": [
+        {
+          "citation": "S1",
+          "supported": false,
+          "reason": "S1列出的怠速抖动原因包括发动机固定螺栓松动、某一缸断缸、喷油器损坏、发动机胶垫损坏，未提到油品问题和缸压不足。"
+        }
+      ],
+      "judge_reason": "候选答案列出的原因与参考答案不一致，且所引用的S1不支持其结论。",
+      "judge_error": null,
+      "judge_fallback_used": false,
+      "judge_primary_error": null
+    },
+    {
+      "id": "idle-repair",
+      "question": "挖机60E怠速抖动大最终是如何解决的？",
+      "token_f1": 0.2978723404255319,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "cited_ids": [
+        "S2"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_002"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_001",
+        "doc_000_chunk_002",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005",
+        "doc_000_chunk_006",
+        "doc_007_chunk_006",
+        "doc_007_chunk_007",
+        "doc_007_chunk_018",
+        "doc_007_chunk_029"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_002"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 77,
+      "refused": false,
+      "answer_preview": "最终是通过更换发动机脚垫来解决挖机60E怠速抖动大的问题。服务人员发现脚垫有不同程度的磨损，更换了4个新的发动机胶垫，发动机怠速抖动大消除，问题得到解决。",
+      "judge_model": "glm",
+      "correct": true,
+      "correctness_score": 5.0,
+      "faithful": true,
+      "unsupported_claims": [],
+      "citation_support": [
+        {
+          "citation": "S2",
+          "supported": true,
+          "reason": "S2明确记录脚垫磨损、更换4个新发动机胶垫后故障消除，完全支持候选答案"
+        }
+      ],
+      "judge_reason": "候选答案所述更换4个新发动机胶垫的解决方案与参考答案一致，且完全由S2支持。",
+      "judge_error": null,
+      "judge_fallback_used": true,
+      "judge_primary_error": "Extra data: line 1 column 240 (char 239)"
+    },
+    {
+      "id": "idle-rpm",
+      "question": "挖机60E怠速抖动案例中，发动机在什么转速以下抖动明显？",
+      "token_f1": 0.8571428571428571,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "cited_ids": [
+        "S2"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_002"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_002",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_002"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 20,
+      "refused": false,
+      "answer_preview": "发动机在低于1500转以下抖动明显  。",
+      "judge_model": "deepseek",
+      "correct": true,
+      "correctness_score": 5.0,
+      "faithful": true,
+      "unsupported_claims": [],
+      "citation_support": [
+        {
+          "citation": "S2",
+          "supported": true,
+          "reason": "S2明确说明发动机在低于1500转以下抖动现象比较明显，支持候选答案。"
+        }
+      ],
+      "judge_reason": "候选答案与参考答案事实一致，且引用片段S2直接支持该结论。",
+      "judge_error": null,
+      "judge_fallback_used": false,
+      "judge_primary_error": null
+    },
+    {
+      "id": "temp-false-high",
+      "question": "水温高报警案例中，如何判断是真高温还是假高温？",
+      "token_f1": 0.3157894736842105,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "cited_ids": [
+        "S1"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_003"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_003",
+        "doc_000_chunk_004",
+        "doc_000_chunk_006",
+        "doc_002_chunk_002",
+        "doc_003_chunk_007",
+        "doc_003_chunk_008",
+        "doc_003_chunk_009",
+        "doc_003_chunk_037",
+        "doc_005_chunk_006"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_003"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 56,
+      "refused": false,
+      "answer_preview": "首先需要判断是真高温还是假高温  。判断方法是检查实际水温，如果实际水温低于仪表显示的水温，则可能是假高温  。",
+      "judge_model": "deepseek",
+      "correct": true,
+      "correctness_score": 4.0,
+      "faithful": true,
+      "unsupported_claims": [],
+      "citation_support": [
+        {
+          "citation": "S1",
+          "supported": true,
+          "reason": "S1明确说明首先需要判断是真高温还是假高温。"
+        },
+        {
+          "citation": "S1",
+          "supported": true,
+          "reason": "S1说明水温报警120度时检查实际水温为62度并判断为假高温，可支持通过实际水温与仪表报警温度差异判断假高温。"
+        }
+      ],
+      "judge_reason": "候选答案与S1中检查实际水温并判断假高温的方法一致，但未明确给出实际水温62度这一关键数值，精确性略不足。",
+      "judge_error": null,
+      "judge_fallback_used": false,
+      "judge_primary_error": null
+    },
+    {
+      "id": "temp-repair",
+      "question": "水温高报警最终更换了什么？",
+      "token_f1": 0.25,
+      "citation_precision": 0.0,
+      "citation_recall": 0.0,
+      "cited_ids": [
+        "S2"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_004"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_003",
+        "doc_000_chunk_004",
+        "doc_000_chunk_005",
+        "doc_000_chunk_006",
+        "doc_007_chunk_003",
+        "doc_007_chunk_007",
+        "doc_007_chunk_018",
+        "doc_007_chunk_021",
+        "doc_007_chunk_029"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_005"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 13,
+      "refused": false,
+      "answer_preview": "最终更换了水温传感器  。",
+      "judge_model": "deepseek",
+      "correct": false,
+      "correctness_score": 1.0,
+      "faithful": false,
+      "unsupported_claims": [
+        "最终更换了水温传感器"
+      ],
+      "citation_support": [
+        {
+          "citation": "S2",
+          "supported": false,
+          "reason": "S2仅提到处理搭铁线并将水温传感器改成双线制，未说明最终更换了水温传感器。"
+        }
+      ],
+      "judge_reason": "参考答案和上下文S4均表明最终维修方案是更换总电源，而候选答案称更换水温传感器，与事实不符且引用S2不支持。",
+      "judge_error": null,
+      "judge_fallback_used": false,
+      "judge_primary_error": null
+    }
+  ]
+}

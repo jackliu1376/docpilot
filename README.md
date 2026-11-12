@@ -29,9 +29,11 @@ This repository extends the original educational RAG demo with:
 - 56 credential-free tests
 
 Retrieval baseline (8 files, 140 chunks, 46 questions): Chinese BGE + BGE reranker reaches
-**Recall@5 0.8982**, **MRR@5 0.8822**, and **nDCG@5 0.8446**. The answer-level smoke run reports
-token F1 0.1486 and citation precision/recall 0.5000 on two questions; see [`eval/README.md`](eval/README.md)
-for the full setup.
+**Recall@5 0.8982**, **MRR@5 0.8822**, and **nDCG@5 0.8446**. The 10-question answer evaluation
+compares local `qwen2.5:3b` with DeepSeek v4.1 Flash and GLM 5.3 Flash. DeepSeek leads citation
+recall (0.95) and is judged correct/faithful on all 10 questions; GLM also reaches 10/10, though
+60% of its judge calls used GLM itself as a fallback. The local 3B is correct on 5/10 and faithful
+on 7/10 despite winning lexical F1. See [`eval/README.md`](eval/README.md) for the full table.
 
 ## Why this project
 
@@ -40,7 +42,7 @@ for the full setup.
 - **Hybrid retrieval**: combines FAISS dense retrieval with BM25 keyword retrieval.
 - **Structured citations**: `[S1]` labels with filename/chunk and web-source metadata.
 - **Measurable quality**: retrieval and answer-level evaluation harnesses.
-- **Multiple model backends**: local Ollama, SiliconFlow, and OpenAI-compatible APIs.
+- **Multiple model backends**: local Ollama, DeepSeek, Zhipu GLM, and other OpenAI-compatible APIs.
 - **Document support**: PDF, TXT, Markdown, DOCX, XLS/XLSX, and PPTX.
 - **Two interfaces**: a Gradio web application and a FastAPI REST API.
 
@@ -157,18 +159,21 @@ See [`example.env`](example.env) for the complete example. Common variables incl
 
 | Variable | Purpose |
 | --- | --- |
-| `SILICONFLOW_API_KEY` | SiliconFlow API credential |
-| `SILICONFLOW_MODEL_NAME` | SiliconFlow model ID |
-| `MAGICK_API_KEY` | OpenAI-compatible provider credential |
-| `MAGICK_API_URL` | Provider base URL or full Chat Completions URL |
-| `MAGICK_MODEL_NAME` | Provider model ID |
+| `DEEPSEEK_API_KEY` | DeepSeek API credential |
+| `DEEPSEEK_API_URL` | DeepSeek base URL (default `https://api.deepseek.com/v1`) |
+| `DEEPSEEK_MODEL_NAME` | DeepSeek model ID (default `deepseek-v4.1-flash`) |
+| `GLM_API_KEY` | Zhipu GLM API credential |
+| `GLM_API_URL` | GLM base URL (default `https://open.bigmodel.cn/api/paas/v4`) |
+| `GLM_MODEL_NAME` | GLM model ID (default `glm-5.3-flash`) |
 | `OLLAMA_MODEL_NAME` | Local Ollama model name |
 | `OLLAMA_MAX_OUTPUT_TOKENS` | Max tokens per Ollama answer (default 1024) |
 | `OLLAMA_QUERY_MAX_TOKENS` | Max tokens for Ollama query rewriting (default 64) |
 | `OLLAMA_TIMEOUT_SECONDS` | Ollama request timeout in seconds (default 300) |
 | `EMBED_MODEL_NAME` | Embedding model ID (default `all-MiniLM-L6-v2`) |
 | `EMBED_QUERY_PREFIX` | Optional query instruction prefix for BGE models |
-| `SERPAPI_KEY` | Optional web-search credential |
+| `SEARCH_PROVIDER` | `tavily` (default) or `serpapi` |
+| `TAVILY_API_KEY` | Optional Tavily web-search credential |
+| `SERPAPI_KEY` | Optional legacy SerpAPI credential |
 | `RERANK_METHOD` | `cross_encoder` or `llm` |
 | `RERANK_MODEL_NAME` | CrossEncoder model ID (default `BAAI/bge-reranker-base`) |
 | `RAG_DATA_DIR` | Persistent data directory (default `data/`) |
@@ -198,8 +203,9 @@ filename/chunk or web URL metadata. The prompt asks the model to cite `[S1]`
 inline, and the Gradio UI appends the source list under the answer.
 
 The answer-level harness in `eval/run_answer_eval.py` measures token F1,
-citation precision/recall, and refusal rate. It calls Ollama, so start with
-`--limit` and see `eval/README.md` for details.
+citation precision/recall, refusal rate, and optional LLM
+correctness/faithfulness scores. It calls Ollama or a cloud backend, so start
+with `--limit` and see `eval/README.md` for details.
 
 ## Known limitations
 

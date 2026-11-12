@@ -1,5 +1,6 @@
 from core.answer import Source
 from eval.answer_metrics import citation_scores, token_f1
+from eval.run_answer_eval import clean_answer, strip_details
 
 
 def test_token_f1_identical_answers_score_one():
@@ -24,3 +25,15 @@ def test_citation_scores_precision_and_recall():
 
 def test_citation_scores_without_citations():
     assert citation_scores(set(), {}, {"a"}) == (0.0, 0.0)
+
+
+def test_strip_details_removes_thinking_but_keeps_citations():
+    text = "答案 [S1]\n<details><summary>思考</summary>推理 [S9]</details>"
+
+    assert strip_details(text).strip() == "答案 [S1]"
+
+
+def test_clean_answer_removes_details_and_citations():
+    text = "答案 [S1]\n<details><summary>思考</summary>推理 [S9]</details>"
+
+    assert clean_answer(text).strip() == "答案"

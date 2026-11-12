@@ -1,0 +1,502 @@
+{
+  "corpus_files": [
+    "挖掘机维修案例(样例）.pdf",
+    "eval/data/1.pptx",
+    "eval/data/3系统总线.pptx",
+    "eval/data/6计算机的运算方法1.pptx",
+    "eval/data/7指令系统.pptx",
+    "eval/data/8CPU的结构和功能.pptx",
+    "eval/data/gzx9控制单元的功能.pptx",
+    "eval/data/数据库课程设计题目汇总-2024.pdf"
+  ],
+  "dataset": "eval/golden_qa.jsonl",
+  "model_choice": "deepseek",
+  "judge_requested": "auto",
+  "judge_model": "glm",
+  "limit": 10,
+  "metrics": {
+    "token_f1": 0.2491577842417335,
+    "citation_precision": 0.8,
+    "citation_recall": 0.95,
+    "refusal_rate": 0.0,
+    "retrieval_hit_rate": 1.0,
+    "citation_adherence_rate": 1.0,
+    "mean_answer_chars": 132.8,
+    "correctness_rate": 1.0,
+    "mean_correctness_score": 5.0,
+    "faithfulness_rate": 1.0,
+    "unsupported_claim_count": 0,
+    "citation_support_rate": 1.0,
+    "judge_error_rate": 0.0
+  },
+  "per_query": [
+    {
+      "id": "blue-smoke-causes",
+      "question": "发动机冒蓝烟的可能故障原因有哪些？",
+      "token_f1": 0.2758620689655173,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "cited_ids": [
+        "S1"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005",
+        "doc_000_chunk_006"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 175,
+      "refused": false,
+      "answer_preview": "发动机冒蓝烟的可能故障原因包括油品有问题、缸压不够、喷油器有问题和泵有问题  。相关分析还涉及燃油不充分燃烧、缸压问题及喷油器雾化不良  。\n\n关键依据：\n- 可能原因列出：油品、缸压、喷油器、泵  。\n- 故障分析指出：冒蓝烟、柴油味重与燃油不充分燃烧、缸压问题或喷油器雾化不良有关  。\n\n引用来源：  本地文档《挖掘机维修案例(样例).pdf》",
+      "judge_model": "glm",
+      "correct": true,
+      "correctness_score": 5.0,
+      "faithful": true,
+      "unsupported_claims": [],
+      "citation_support": [
+        {
+          "citation": "S1",
+          "supported": true,
+          "reason": "S1 明确列出冒蓝烟的可能原因：油品、缸压不够、喷油器、泵，并包含燃油不充分燃烧、喷油器雾化不良的分析"
+        }
+      ],
+      "judge_reason": "候选答案与参考答案完全一致，且所有结论均被 [S1] 直接支持。",
+      "judge_error": null
+    },
+    {
+      "id": "blue-smoke-repair",
+      "question": "发动机冒蓝烟最终更换了什么部件？",
+      "token_f1": 0.0909090909090909,
+      "citation_precision": 1.0,
+      "citation_recall": 0.5,
+      "cited_ids": [
+        "S1"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005",
+        "doc_000_chunk_006"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001"
+      ],
+      "relevant_chunks": 2,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 102,
+      "refused": false,
+      "answer_preview": "发动机冒蓝烟最终更换了喷油器  。\n\n关键依据：检查燃油和高压油泵未见问题；断缸测试发现4缸缺缸、缸压正常；据此判断为喷油器问题，更换喷油器后故障排除  。\n\n引用来源：  挖掘机维修案例(样例).pdf",
+      "judge_model": "glm",
+      "correct": true,
+      "correctness_score": 5.0,
+      "faithful": true,
+      "unsupported_claims": [],
+      "citation_support": [
+        {
+          "citation": "S1",
+          "supported": true,
+          "reason": "S1 明确记录发动机冒蓝烟故障经检查后判断为喷油器问题，更换喷油器故障排除"
+        }
+      ],
+      "judge_reason": "候选答案与参考答案一致，且所有结论均被 S1 的故障检查排除步骤直接支持。",
+      "judge_error": null
+    },
+    {
+      "id": "blue-smoke-cylinder",
+      "question": "发动机冒蓝烟案例中，断缸测试发现哪一缸缺缸？",
+      "token_f1": 0.2222222222222222,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "cited_ids": [
+        "S1"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_002",
+        "doc_000_chunk_005",
+        "doc_000_chunk_006"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 67,
+      "refused": false,
+      "answer_preview": "断缸测试发现 **4缸缺缸**  。\n\n关键依据：\n- 故障检查排除步骤中记载“检查发动机断缸测试发动机4缸缺缸”  。\n\n引用来源：",
+      "judge_model": "glm",
+      "correct": true,
+      "correctness_score": 5.0,
+      "faithful": true,
+      "unsupported_claims": [],
+      "citation_support": [
+        {
+          "citation": "S1",
+          "supported": true,
+          "reason": "S1 明确记载'检查发动机断缸测试发动机4缸缺缸'，与候选答案及参考答案完全一致。"
+        }
+      ],
+      "judge_reason": "候选答案'4缸缺缸'与参考答案一致，且被 S1 的断缸测试记录直接支持。",
+      "judge_error": null
+    },
+    {
+      "id": "blue-smoke-analysis",
+      "question": "发动机冒蓝烟的故障现象分析是什么？",
+      "token_f1": 0.46376811594202894,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "cited_ids": [
+        "S1"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005",
+        "doc_000_chunk_006"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 114,
+      "refused": false,
+      "answer_preview": "发动机冒蓝烟的故障现象分析为：冒蓝烟且柴油味道重，涉及燃油不充分燃烧、缸压问题或喷油器雾化不良  。\n\n关键依据：\n- 现象表现为冒蓝烟、柴油味道重  。\n- 分析指向燃油不充分燃烧、缸压问题或喷油器雾化不良  。\n\n引用来源：",
+      "judge_model": "glm",
+      "correct": true,
+      "correctness_score": 5.0,
+      "faithful": true,
+      "unsupported_claims": [],
+      "citation_support": [
+        {
+          "citation": "S1",
+          "supported": true,
+          "reason": "S1明确记载故障现象分析为'冒蓝烟，柴油味道重，燃油不充分燃烧，或者缸压问题，或者喷油器雾化不良'，与候选答案一致。"
+        }
+      ],
+      "judge_reason": "候选答案与参考答案及S1原文内容完全一致，所有事实性结论均有检索上下文支持。",
+      "judge_error": null
+    },
+    {
+      "id": "blue-smoke-prevention",
+      "question": "发动机冒蓝烟案例的预防再发建议是什么？",
+      "token_f1": 0.4210526315789474,
+      "citation_precision": 0.5,
+      "citation_recall": 1.0,
+      "cited_ids": [
+        "S2",
+        "S4"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005",
+        "doc_000_chunk_006"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_001"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 38,
+      "refused": false,
+      "answer_preview": "发动机冒蓝烟案例的预防再发建议是“平时做好油品使用”  。\n\n引用来源： 、",
+      "judge_model": "glm",
+      "correct": true,
+      "correctness_score": 5.0,
+      "faithful": true,
+      "unsupported_claims": [],
+      "citation_support": [
+        {
+          "citation": "S2",
+          "supported": true,
+          "reason": "S2明确记载喷油器更换案例的预防再发建议为'平时做好油品使用'，与冒蓝烟案例维修方案一致"
+        },
+        {
+          "citation": "S4",
+          "supported": true,
+          "reason": "S4是发动机冒蓝烟案例本身，维修方案为更换喷油器，与S2的预防建议对应"
+        }
+      ],
+      "judge_reason": "候选答案与参考答案完全一致，且引用S2、S4均支持该结论。",
+      "judge_error": null
+    },
+    {
+      "id": "idle-causes",
+      "question": "挖机60E怠速抖动大的可能原因有哪些？",
+      "token_f1": 0.2608695652173913,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "cited_ids": [
+        "S1",
+        "S2"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_001",
+        "doc_000_chunk_002"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_002",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_001",
+        "doc_000_chunk_002"
+      ],
+      "relevant_chunks": 2,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 214,
+      "refused": false,
+      "answer_preview": "挖机60E怠速抖动大的可能原因包括：发动机固定螺栓松动、某一缸断缸、喷油器损坏、发动机胶垫损坏  。\n\n- 发动机固定螺栓松动可造成怠速抖动大  。\n- 发动机某一缸断缸可造成怠速抖动大  。\n- 喷油器损坏会导致各气缸喷油量不均匀、雾化不良，造成各气缸输出功率不均，引起发动机抖动  。\n- 发动机脚垫（胶垫）磨损严重可造成怠速抖动大   。\n\n引用来源：  挖掘机维修案例(样例).pdf；  挖掘机维修案例(样例).pdf",
+      "judge_model": "glm",
+      "correct": true,
+      "correctness_score": 5.0,
+      "faithful": true,
+      "unsupported_claims": [],
+      "citation_support": [
+        {
+          "citation": "S1",
+          "supported": true,
+          "reason": "S1完整列出了四个可能原因及其分析，与候选答案一致"
+        },
+        {
+          "citation": "S2",
+          "supported": true,
+          "reason": "S2确认脚垫磨损导致怠速抖动并更换胶垫后故障消除"
+        }
+      ],
+      "judge_reason": "候选答案四条原因与参考答案完全一致，且均有S1、S2片段明确支持。",
+      "judge_error": null
+    },
+    {
+      "id": "idle-repair",
+      "question": "挖机60E怠速抖动大最终是如何解决的？",
+      "token_f1": 0.1627906976744186,
+      "citation_precision": 0.5,
+      "citation_recall": 1.0,
+      "cited_ids": [
+        "S2",
+        "S3"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_002",
+        "doc_000_chunk_003"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_001",
+        "doc_000_chunk_002",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005",
+        "doc_000_chunk_006"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_002"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 184,
+      "refused": false,
+      "answer_preview": "挖机60E怠速抖动大最终通过更换发动机脚垫（胶垫）解决，共更换4个新的发动机胶垫，试车后故障消除、工作正常。  \n\n关键依据：\n- 已紧固发动机固定螺栓，检查喷油器并进行断缸实验，均未解决问题。 \n- 检查发现发动机脚垫有不同程度磨损，更换4个新的发动机胶垫后，怠速抖动大消除。 \n- 维修方案为更换发动机脚垫，效果确认为试车后故障消除、工作正常。 \n\n引用来源： 、",
+      "judge_model": "glm",
+      "correct": true,
+      "correctness_score": 5.0,
+      "faithful": true,
+      "unsupported_claims": [],
+      "citation_support": [
+        {
+          "citation": "S2",
+          "supported": true,
+          "reason": "S2明确记载紧固螺栓、检查喷油器断缸均无问题，发现脚垫磨损后更换4个新发动机胶垫，抖动消除"
+        },
+        {
+          "citation": "S3",
+          "supported": true,
+          "reason": "S3记载维修方案为更换发动机脚垫，效果确认为试车后故障消除、工作正常"
+        }
+      ],
+      "judge_reason": "候选答案与参考答案一致（更换4个新的发动机胶垫），且所有事实均由S2、S3支持，引用准确。",
+      "judge_error": null
+    },
+    {
+      "id": "idle-rpm",
+      "question": "挖机60E怠速抖动案例中，发动机在什么转速以下抖动明显？",
+      "token_f1": 0.23529411764705882,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "cited_ids": [
+        "S2"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_002"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_002",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_002"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 133,
+      "refused": false,
+      "answer_preview": "发动机在低于1500转以下时抖动明显  。高于1500转时机器正常  。\n\n关键依据：\n- 服务人员试车发现，发动机低于1500转以下抖动现象比较明显  。\n- 发动机转速高于1500转时机器正常  。\n\n引用来源：\n-   本地文档：挖掘机维修案例(样例).pdf",
+      "judge_model": "glm",
+      "correct": true,
+      "correctness_score": 5.0,
+      "faithful": true,
+      "unsupported_claims": [],
+      "citation_support": [
+        {
+          "citation": "S2",
+          "supported": true,
+          "reason": "S2明确写明发动机低于1500转以下抖动现象比较明显，高于1500转时机器正常，完全支持候选答案。"
+        }
+      ],
+      "judge_reason": "候选答案与参考答案一致，且结论完全被S2原文支持，引用准确。",
+      "judge_error": null
+    },
+    {
+      "id": "temp-false-high",
+      "question": "水温高报警案例中，如何判断是真高温还是假高温？",
+      "token_f1": 0.17699115044247787,
+      "citation_precision": 0.5,
+      "citation_recall": 1.0,
+      "cited_ids": [
+        "S1",
+        "S2"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_003",
+        "doc_000_chunk_004"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_003",
+        "doc_000_chunk_004",
+        "doc_003_chunk_008",
+        "doc_003_chunk_037"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_003"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 230,
+      "refused": false,
+      "answer_preview": "判断方法是检查实际水温，并与仪表显示/报警情况进行对比；若实际水温不高而仪表显示高温报警，则判断为假高温  。本案例中检查实际水温为62度，因此判断为假高温  ；后续还通过检查水温传感器线路、加热水温传感器并对比仪表显示来进一步确认   。\n\n关键依据：\n- 出现水温高时，检查实际水温为62度，判断为假高温  。\n- 检查水温传感器线路对地不导通、与其他线束不短路  。\n- 将水温传感器接线加热，加热水温与仪表显示水温一致，仪表显示正常  。\n\n引用来源：",
+      "judge_model": "glm",
+      "correct": true,
+      "correctness_score": 5.0,
+      "faithful": true,
+      "unsupported_claims": [],
+      "citation_support": [
+        {
+          "citation": "S1",
+          "supported": true,
+          "reason": "S1明确记载检查实际水温为62度判断为假高温，并包含检查传感器线路对地不导通、不短路的步骤。"
+        },
+        {
+          "citation": "S2",
+          "supported": true,
+          "reason": "S2记载将水温传感器接线加热，加热水温与仪表显示水温一致，仪表显示正常，支持进一步确认的结论。"
+        }
+      ],
+      "judge_reason": "候选答案与参考答案事实一致（实际水温62度判断为假高温），所有结论均有S1、S2上下文支持。",
+      "judge_error": null
+    },
+    {
+      "id": "temp-repair",
+      "question": "水温高报警最终更换了什么？",
+      "token_f1": 0.18181818181818182,
+      "citation_precision": 0.5,
+      "citation_recall": 1.0,
+      "cited_ids": [
+        "S2",
+        "S4"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_004",
+        "doc_000_chunk_005"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_003",
+        "doc_000_chunk_004",
+        "doc_000_chunk_005",
+        "doc_000_chunk_006"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_005"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 71,
+      "refused": false,
+      "answer_preview": "水温高报警最终更换的是总电源  。  \n关键依据：检查发现总电源有接通不良情况   ；维修方案为更换总电源，且故障排除  。\n\n引用来源： 、",
+      "judge_model": "glm",
+      "correct": true,
+      "correctness_score": 5.0,
+      "faithful": true,
+      "unsupported_claims": [],
+      "citation_support": [
+        {
+          "citation": "S2",
+          "supported": true,
+          "reason": "S2提到'检查总电源有接通不良情况'，支持关键依据"
+        },
+        {
+          "citation": "S4",
+          "supported": true,
+          "reason": "S4明确记载'维修方案:更换总电源 效果确认:故障排除'"
+        }
+      ],
+      "judge_reason": "候选答案与参考答案'更换总电源'一致，且所有结论均有S2、S4上下文支持。",
+      "judge_error": null
+    }
+  ]
+}

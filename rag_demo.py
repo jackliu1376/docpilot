@@ -11,18 +11,16 @@
 请按照 core/__init__.py 中的学习路线逐模块阅读。
 """
 
-import os
 import logging
 import webbrowser
 import gradio as gr
 import jieba
-from typing import List, Tuple, Optional
 from datetime import datetime
 
 # 导入配置
 from config import (
-    DEFAULT_MODEL_CHOICE, SILICONFLOW_API_KEY, MAGICK_API_KEY,
-    OLLAMA_MODEL_NAME, SILICONFLOW_MODEL_NAME, MAGICK_MODEL_NAME,
+    DEFAULT_MODEL_CHOICE, DEEPSEEK_API_KEY, GLM_API_KEY,
+    OLLAMA_MODEL_NAME, DEEPSEEK_MODEL_NAME, GLM_MODEL_NAME,
     EMBED_MODEL_NAME, RERANK_MODEL_NAME,
     MODEL_CHOICES, MODEL_DISPLAY_NAMES, is_configured_api_key
 )
@@ -30,7 +28,7 @@ from config import (
 # 导入核心模块
 from core.knowledge_base import knowledge_base
 from core.vector_store import vector_store
-from core.generator import answer_question, call_siliconflow_api, call_magick_api
+from core.generator import answer_question, call_deepseek_api, call_glm_api
 
 # 导入工具
 from utils.network import is_port_available
@@ -162,8 +160,8 @@ def get_system_models_info():
         "检索方法": "向量检索 + BM25混合检索 (α=0.7)",
         "重排序模型": f"交叉编码器 ({RERANK_MODEL_NAME})",
         "生成模型(Ollama)": OLLAMA_MODEL_NAME,
-        "生成模型(SiliconFlow)": SILICONFLOW_MODEL_NAME,
-        "生成模型(Magick API)": MAGICK_MODEL_NAME,
+        "生成模型(DeepSeek)": DEEPSEEK_MODEL_NAME,
+        "生成模型(GLM)": GLM_MODEL_NAME,
         "分词工具": "jieba (中文分词)"
     }
 
@@ -244,7 +242,7 @@ with gr.Blocks(title="本地RAG问答系统") as demo:
                         with gr.Row():
                             web_search_checkbox = gr.Checkbox(
                                 label="启用联网搜索", value=False,
-                                info="打开后将同时搜索网络内容（需配置SERPAPI_KEY）"
+                                info="打开后将同时搜索网络内容（需配置 TAVILY_API_KEY）"
                             )
                             model_choice = gr.Dropdown(
                                 choices=MODEL_CHOICES,
@@ -443,30 +441,30 @@ with gr.Blocks(title="本地RAG问答系统") as demo:
 
 def check_environment():
     """环境依赖检查"""
-    if is_configured_api_key(SILICONFLOW_API_KEY):
-        print("✅ SiliconFlow API 密钥已配置")
+    if is_configured_api_key(DEEPSEEK_API_KEY):
+        print("✅ DeepSeek API 密钥已配置")
         try:
-            result = call_siliconflow_api("你好，请回复'连接成功'", temperature=0.1, max_tokens=50)
+            result = call_deepseek_api("你好，请回复'连接成功'", temperature=0.1, max_tokens=50)
             if isinstance(result, str) and ("连接成功" in result or "你好" in result):
-                print("✅ SiliconFlow API 连接测试成功")
+                print("✅ DeepSeek API 连接测试成功")
             else:
-                print("⚠️ SiliconFlow API 响应异常，但继续运行")
+                print("⚠️ DeepSeek API 响应异常，但继续运行")
             return True
         except Exception as e:
-            print(f"⚠️ SiliconFlow API 测试失败: {e}")
+            print(f"⚠️ DeepSeek API 测试失败: {e}")
             return True
 
-    if is_configured_api_key(MAGICK_API_KEY):
-        print("✅ Magick API 密钥已配置")
+    if is_configured_api_key(GLM_API_KEY):
+        print("✅ GLM API 密钥已配置")
         try:
-            result = call_magick_api("你好，请回复'连接成功'", temperature=0.1, max_tokens=50)
+            result = call_glm_api("你好，请回复'连接成功'", temperature=0.1, max_tokens=50)
             if isinstance(result, str) and ("连接成功" in result or "你好" in result):
-                print("✅ Magick API 连接测试成功")
+                print("✅ GLM API 连接测试成功")
             else:
-                print("⚠️ Magick API 响应异常，但继续运行")
+                print("⚠️ GLM API 响应异常，但继续运行")
             return True
         except Exception as e:
-            print(f"⚠️ Magick API 测试失败: {e}")
+            print(f"⚠️ GLM API 测试失败: {e}")
             return True
 
     print("⚠️ 未配置云端 API 密钥，将尝试使用本地 Ollama")
@@ -479,7 +477,7 @@ def check_environment():
     except Exception:
         pass
     print("❌ 未找到任何可用的 LLM 后端")
-    print("   请在 .env 中配置 SILICONFLOW_API_KEY / MAGICK_API_KEY 或启动 Ollama 服务")
+    print("   请在 .env 中配置 DEEPSEEK_API_KEY / GLM_API_KEY 或启动 Ollama 服务")
     return False
 
 

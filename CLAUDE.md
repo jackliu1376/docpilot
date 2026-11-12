@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-DocPilot is an educational/reference RAG implementation (Python 3.10+) with two entry points: a Gradio web UI (`rag_demo.py`) and a FastAPI REST API (`api_router.py`). It supports local Ollama, SiliconFlow, and OpenAI-compatible Magick backends, plus optional SerpAPI web search. It is explicitly not a production service: no auth or tenancy; persistence is single-user SQLite.
+DocPilot is an educational/reference RAG implementation (Python 3.10+) with two entry points: a Gradio web UI (`rag_demo.py`) and a FastAPI REST API (`api_router.py`). It supports local Ollama, DeepSeek, Zhipu GLM, and other OpenAI-compatible backends, plus optional SerpAPI web search. It is explicitly not a production service: no auth or tenancy; persistence is single-user SQLite.
 
 The knowledge base is persisted in SQLite at `data/rag.db` (gitignored; `RAG_DATA_DIR` overrides). `vector_store` and `bm25_manager` are derived in-memory indexes rebuilt from SQLite at startup and after writes. `chunk_data_cache` and model caches remain in memory.
 
@@ -50,6 +50,9 @@ PYTHONIOENCODING=utf-8 python -m eval.run_retrieval_eval --k 5 --json-out eval/r
 
 # Answer-level evaluation (full pipeline; requires Ollama, slow)
 PYTHONIOENCODING=utf-8 python -m eval.run_answer_eval --limit 10 --model-choice ollama
+
+# With LLM correctness/faithfulness judge (`auto` cross-judges cloud candidates)
+PYTHONIOENCODING=utf-8 python -m eval.run_answer_eval --limit 10 --model-choice deepseek --judge-model auto
 ```
 
 `eval/golden_qa.jsonl` holds the golden questions; a chunk is relevant when its whitespace-stripped text contains any `relevant_snippets` entry. Retrieval metrics live in `eval/retrieval_metrics.py`; answer metrics (token F1, citation precision/recall) live in `eval/answer_metrics.py`.
@@ -80,19 +83,19 @@ SHA-256 file hash -> dedup/replace decision
 
 Both interfaces call `core.generator.answer_question()`, which returns an `AnswerResult(answer, sources, metadata)`. `query_answer()` is a string-only compatibility wrapper; `stream_answer()` remains string-based.
 
-1. `recursive_retrieval()` (`core/retriever.py`) — up to `MAX_RETRIEVAL_ITERATIONS` rounds. Each round optionally appends SerpAPI web snippets (deduplicated, not indexed), queries FAISS, queries BM25, merges with `hybrid_merge()` (weighted rank scores: `alpha` semantic + `1-alpha` BM25), reranks, then asks the LLM to rewrite the query. Returns parallel lists `(contexts, doc_ids, metadata)`.
+1. `recursive_retrieval()` (`core/retriever.py`) — up to `MAX_RETRIEVAL_ITERATIONS` rounds. Each round optionally appends Tavily (default) or SerpAPI web snippets (deduplicated, not indexed), queries FAISS, queries BM25, merges with `hybrid_merge()` (weighted rank scores: `alpha` semantic + `1-alpha` BM25), reranks, then asks the LLM to rewrite the query. Returns parallel lists `(contexts, doc_ids, metadata)`.
 2. `_build_context()` — labels context blocks `[S1]`, `[S2]`, ... and returns typed `Source` objects (id, kind, snippet, filename/chunk or web URL metadata).
 3. `detect_conflicts()` (`features/conflict_detector.py`) and a keyword check for time-sensitive questions.
 4. `_build_prompt()` — the prompt instructs the model to use only retrieved content, cite `[S1]` inline, and explicitly treats retrieved text as untrusted data. Preserve the untrusted-data instruction when editing prompts.
-5. Backend call (`siliconflow`/`magick` via shared OpenAI-compatible helper, `ollama` via `/api/generate`), then `process_thinking_content()` converts `<think>...</think>` into a collapsible `<details>` block and escapes other HTML. `/api/ask` returns the structured `sources`; the UI appends a source list under the answer.
+5. Backend call (`deepseek`/`glm`, plus legacy `siliconflow`/`magick`, via the shared OpenAI-compatible helper; `ollama` via `/api/generate`), then `process_thinking_content()` converts `<think>...</think>` into a collapsible `<details>` block and escapes other HTML. `/api/ask` returns the structured `sources`; the UI appends a source list under the answer.
 
 Cloud API helpers return error text instead of raising; callers generally surface strings as answers. Keep new failure paths actionable (README/CONTRIBUTING requirement) and avoid HTTP calls when a key is missing — `tests/test_no_key_fallback.py` enforces this.
 
 ## Configuration and model selection
 
-`config.py` loads `.env`, falling back to `example.env` with a warning; it sets `HF_ENDPOINT=https://hf-mirror.com`. Keys beginning with `Your` are placeholders (`is_configured_api_key`). `DEFAULT_MODEL_CHOICE` is computed **at import time** with priority SiliconFlow → Magick → local Ollama probe (`localhost:11434`, 3s timeout) → SiliconFlow fallback. Persistent data lives at `DATA_DIR`/`DB_PATH` (`RAG_DATA_DIR`, default `data/`).
+`config.py` loads `.env`, falling back to `example.env` with a warning; it sets `HF_ENDPOINT=https://hf-mirror.com`. Keys beginning with `Your` are placeholders (`is_configured_api_key`). `DEFAULT_MODEL_CHOICE` is computed **at import time** with priority DeepSeek → GLM → local Ollama probe (`localhost:11434`, 3s timeout) → DeepSeek fallback. Persistent data lives at `DATA_DIR`/`DB_PATH` (`RAG_DATA_DIR`, default `data/`).
 
-RAG hyperparameters are module constants, not environment variables: `CHUNK_SIZE=400`, `CHUNK_OVERLAP=40`, `HYBRID_ALPHA=0.7`, `RETRIEVAL_TOP_K=10`, `RERANK_TOP_K=5`, `MAX_RETRIEVAL_ITERATIONS=3`. `EMBED_MODEL_NAME` selects the embedding model and `EMBED_QUERY_PREFIX` optionally prepends a BGE query instruction. `RERANK_METHOD` (`cross_encoder` default, or `llm`) selects `core/reranker.py` behavior; `RERANK_MODEL_NAME` selects the CrossEncoder (default `BAAI/bge-reranker-base`). Ollama generation is bounded by `OLLAMA_MAX_OUTPUT_TOKENS` (1024), `OLLAMA_QUERY_MAX_TOKENS` (64), and `OLLAMA_TIMEOUT_SECONDS` (300); the LLM reranker is capped at 8 output tokens.
+RAG hyperparameters are module constants, not environment variables: `CHUNK_SIZE=400`, `CHUNK_OVERLAP=40`, `HYBRID_ALPHA=0.7`, `RETRIEVAL_TOP_K=10`, `RERANK_TOP_K=5`, `MAX_RETRIEVAL_ITERATIONS=3`. `EMBED_MODEL_NAME` selects the embedding model and `EMBED_QUERY_PREFIX` optionally prepends a BGE query instruction. `DEEPSEEK_API_URL`/`DEEPSEEK_MODEL_NAME` and `GLM_API_URL`/`GLM_MODEL_NAME` configure the two cloud backends. `RERANK_METHOD` (`cross_encoder` default, or `llm`) selects `core/reranker.py` behavior; `RERANK_MODEL_NAME` selects the CrossEncoder (default `BAAI/bge-reranker-base`). Ollama generation is bounded by `OLLAMA_MAX_OUTPUT_TOKENS` (1024), `OLLAMA_QUERY_MAX_TOKENS` (64), and `OLLAMA_TIMEOUT_SECONDS` (300); the LLM reranker is capped at 8 output tokens.
 
 Model/network details:
 

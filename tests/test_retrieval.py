@@ -52,7 +52,7 @@ def test_recursive_retrieval_returns_web_results_with_source_metadata(monkeypatc
         "snippet": "The new retrieval pipeline preserves web source metadata.",
         "timestamp": "2026-08-14",
     }
-    monkeypatch.setattr(retriever, "check_serpapi_key", lambda: True)
+    monkeypatch.setattr(retriever, "check_search_key", lambda: True)
     monkeypatch.setattr(retriever, "search_web", lambda query: [web_result])
     monkeypatch.setattr(
         retriever,
@@ -144,7 +144,7 @@ def test_recursive_retrieval_deduplicates_web_results_across_iterations(monkeypa
         "snippet": "This result is returned for both retrieval queries.",
         "timestamp": None,
     }
-    monkeypatch.setattr(retriever, "check_serpapi_key", lambda: True)
+    monkeypatch.setattr(retriever, "check_search_key", lambda: True)
     monkeypatch.setattr(retriever, "search_web", lambda query: [web_result])
     monkeypatch.setattr(
         retriever,

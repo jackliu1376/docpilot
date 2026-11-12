@@ -29,8 +29,11 @@ DocPilot 是一个本地优先的 RAG 文档助手，面向希望理解并扩展
 - 56 个无外部密钥的测试
 
 检索基线（8 个文件、140 个 chunk、46 条问题）：中文 BGE + BGE 重排达到
-**Recall@5 0.8982**、**MRR@5 0.8822**、**nDCG@5 0.8446**。答案级评测的 2 条问题冒烟结果为
-Token F1 0.1486、引用准确率/召回率 0.5000，详细设置见 [`eval/README.md`](eval/README.md)。
+**Recall@5 0.8982**、**MRR@5 0.8822**、**nDCG@5 0.8446**。10 条答案评测对比了本地
+`qwen2.5:3b`、DeepSeek v4.1 Flash 和 GLM 5.3 Flash：DeepSeek 的引用召回率最高
+（0.95），LLM judge 判定其 10/10 回答正确且忠实；GLM 也达到 10/10，但有 60% 的判分
+使用了 GLM 自评 fallback。本地 3B 仅 5/10 正确、7/10 忠实，虽然它在词面 F1 上领先。
+完整表格和解读见 [`eval/README.md`](eval/README.md)。
 
 ## 项目特点
 
@@ -39,7 +42,7 @@ Token F1 0.1486、引用准确率/召回率 0.5000，详细设置见 [`eval/READ
 - **混合检索**：结合 FAISS 向量检索和 BM25 关键词检索。
 - **结构化引用**：`[S1]` 标注，附带文件名/chunk 或网页来源元数据。
 - **可量化质量**：检索和答案级评测脚本。
-- **多模型后端**：支持本地 Ollama、SiliconFlow 以及 OpenAI-compatible API。
+- **多模型后端**：支持本地 Ollama、DeepSeek、智谱 GLM 以及其他 OpenAI-compatible API。
 - **多种文档格式**：支持 PDF、TXT、Markdown、DOCX、XLS/XLSX 和 PPTX。
 - **双入口**：提供 Gradio Web UI 和 FastAPI REST API。
 
@@ -156,18 +159,21 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest
 
 | 变量 | 作用 |
 | --- | --- |
-| `SILICONFLOW_API_KEY` | SiliconFlow API 密钥 |
-| `SILICONFLOW_MODEL_NAME` | SiliconFlow 模型 ID |
-| `MAGICK_API_KEY` | OpenAI-compatible 服务密钥 |
-| `MAGICK_API_URL` | 服务 base URL 或完整 Chat Completions URL |
-| `MAGICK_MODEL_NAME` | 服务端模型 ID |
+| `DEEPSEEK_API_KEY` | DeepSeek API 密钥 |
+| `DEEPSEEK_API_URL` | DeepSeek base URL（默认 `https://api.deepseek.com/v1`） |
+| `DEEPSEEK_MODEL_NAME` | DeepSeek 模型 ID（默认 `deepseek-v4.1-flash`） |
+| `GLM_API_KEY` | 智谱 GLM API 密钥 |
+| `GLM_API_URL` | GLM base URL（默认 `https://open.bigmodel.cn/api/paas/v4`） |
+| `GLM_MODEL_NAME` | GLM 模型 ID（默认 `glm-5.3-flash`） |
 | `OLLAMA_MODEL_NAME` | 本地 Ollama 模型名称 |
 | `OLLAMA_MAX_OUTPUT_TOKENS` | Ollama 单次回答最大 token 数（默认 1024） |
 | `OLLAMA_QUERY_MAX_TOKENS` | Ollama 查询改写最大 token 数（默认 64） |
 | `OLLAMA_TIMEOUT_SECONDS` | Ollama 请求超时秒数（默认 300） |
 | `EMBED_MODEL_NAME` | 向量化模型 ID（默认 `all-MiniLM-L6-v2`） |
 | `EMBED_QUERY_PREFIX` | BGE 模型可选的查询指令前缀 |
-| `SERPAPI_KEY` | 可选联网搜索密钥 |
+| `SEARCH_PROVIDER` | `tavily`（默认）或 `serpapi` |
+| `TAVILY_API_KEY` | 可选 Tavily 联网搜索密钥 |
+| `SERPAPI_KEY` | 可选旧版 SerpAPI 密钥 |
 | `RERANK_METHOD` | `cross_encoder` 或 `llm` |
 | `RERANK_MODEL_NAME` | CrossEncoder 模型 ID（默认 `BAAI/bge-reranker-base`） |
 | `RAG_DATA_DIR` | 持久化数据目录（默认 `data/`） |
@@ -193,9 +199,9 @@ UI 和 API 应使用相同的 `EMBED_MODEL_NAME`。模型不一致会触发自�
 或网页 URL 等元数据。Prompt 要求模型在回答中用 `[S1]` 标注引用，Gradio UI 会在
 回答下方列出结构化来源。
 
-答案级评测脚本 `eval/run_answer_eval.py` 会统计 Token F1、引用准确率/召回率和
-拒答率。它需要本地 Ollama，建议先用 `--limit` 跑少量问题，详细说明见
-`eval/README.md`。
+答案级评测脚本 `eval/run_answer_eval.py` 会统计 Token F1、引用准确率/召回率、
+拒答率，以及可选的 LLM correctness/faithfulness 评分。它可以使用本地 Ollama
+或云端后端，建议先用 `--limit` 跑少量问题，详细说明见 `eval/README.md`。
 
 ## 已知边界
 

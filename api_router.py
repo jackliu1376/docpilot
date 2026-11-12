@@ -14,11 +14,16 @@ from contextlib import asynccontextmanager
 from version import __version__
 
 # 从重构后的模块导入
-from config import SILICONFLOW_API_KEY, MAGICK_API_KEY, is_configured_api_key
+from config import (
+    SILICONFLOW_API_KEY, MAGICK_API_KEY,
+    DEEPSEEK_API_KEY, GLM_API_KEY,
+    SEARCH_PROVIDER, TAVILY_API_KEY,
+    DEFAULT_MODEL_CHOICE, is_configured_api_key,
+)
 from core.generator import answer_question
 from core.knowledge_base import knowledge_base
 from core.vector_store import vector_store
-from features.web_search import check_serpapi_key
+from features.web_search import check_search_key
 from utils.network import is_port_available
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -50,7 +55,7 @@ app.add_middleware(
 class QuestionRequest(BaseModel):
     question: str
     enable_web_search: bool = False
-    model_choice: str = "siliconflow"
+    model_choice: str = DEFAULT_MODEL_CHOICE
 
 
 class AnswerResponse(BaseModel):
@@ -126,7 +131,11 @@ async def check_status():
         "status": "healthy",
         "siliconflow_configured": is_configured_api_key(SILICONFLOW_API_KEY),
         "magick_configured": is_configured_api_key(MAGICK_API_KEY),
-        "serpapi_configured": check_serpapi_key(),
+        "deepseek_configured": is_configured_api_key(DEEPSEEK_API_KEY),
+        "glm_configured": is_configured_api_key(GLM_API_KEY),
+        "web_search_configured": check_search_key(),
+        "search_provider": SEARCH_PROVIDER,
+        "tavily_configured": is_configured_api_key(TAVILY_API_KEY),
         "documents": stats.documents,
         "embedding_model": stats.embedding_model,
         "vector_store_ready": vector_store.is_ready,

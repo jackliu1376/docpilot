@@ -9,7 +9,7 @@ def test_api_key_validation_rejects_placeholders():
 
 
 def test_default_model_selection_order():
-    assert config.choose_default_model("sk-silicon", "sk-magick", True) == "siliconflow"
-    assert config.choose_default_model(None, "sk-magick", True) == "magick"
+    assert config.choose_default_model("sk-deepseek", "sk-glm", True) == "deepseek"
+    assert config.choose_default_model(None, "sk-glm", True) == "glm"
     assert config.choose_default_model(None, None, True) == "ollama"
-    assert config.choose_default_model(None, None, False) == "siliconflow"
+    assert config.choose_default_model(None, None, False) == "deepseek"

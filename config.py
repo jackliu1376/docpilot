@@ -29,6 +29,15 @@ load_dotenv(dotenv_path)
 SERPAPI_KEY = os.getenv("SERPAPI_KEY")
 SEARCH_ENGINE = "google"
 
+# 联网搜索：默认 Tavily，可通过 SEARCH_PROVIDER=serpapi 切回旧实现
+SEARCH_PROVIDER = os.getenv("SEARCH_PROVIDER", "tavily").strip().lower()
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
+TAVILY_SEARCH_URL = os.getenv(
+    "TAVILY_SEARCH_URL",
+    "https://api.tavily.com/search"
+)
+TAVILY_SEARCH_DEPTH = os.getenv("TAVILY_SEARCH_DEPTH", "basic")
+
 SILICONFLOW_API_KEY = os.getenv("SILICONFLOW_API_KEY")
 SILICONFLOW_API_URL = os.getenv(
     "SILICONFLOW_API_URL",
@@ -40,14 +49,27 @@ MAGICK_API_URL = os.getenv(
     "https://api.magickapi.com/v1/chat/completions"
 )
 
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+DEEPSEEK_API_URL = os.getenv(
+    "DEEPSEEK_API_URL",
+    "https://api.deepseek.com/v1"
+)
+GLM_API_KEY = os.getenv("GLM_API_KEY")
+GLM_API_URL = os.getenv(
+    "GLM_API_URL",
+    "https://open.bigmodel.cn/api/paas/v4"
+)
+
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 第三步：模型名称配置
 # Ollama 格式: deepseek-r1:8b
-# SiliconFlow/Magick API 格式: 使用对应平台提供的模型 ID
+# 云端 API 格式: 使用对应平台提供的模型 ID
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 OLLAMA_MODEL_NAME = os.getenv("OLLAMA_MODEL_NAME", "deepseek-r1:8b")
 SILICONFLOW_MODEL_NAME = os.getenv("SILICONFLOW_MODEL_NAME", "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B")
 MAGICK_MODEL_NAME = os.getenv("MAGICK_MODEL_NAME", "gpt-4o-mini")
+DEEPSEEK_MODEL_NAME = os.getenv("DEEPSEEK_MODEL_NAME", "deepseek-v4.1-flash")
+GLM_MODEL_NAME = os.getenv("GLM_MODEL_NAME", "glm-5.3-flash")
 
 # 向量化模型：默认英文 MiniLM；中文语料建议换成 BAAI/bge-base-zh-v1.5 等
 EMBED_MODEL_NAME = os.getenv("EMBED_MODEL_NAME", "all-MiniLM-L6-v2")
@@ -56,11 +78,11 @@ EMBED_QUERY_PREFIX = os.getenv("EMBED_QUERY_PREFIX", "")
 RERANK_METHOD = os.getenv("RERANK_METHOD", "cross_encoder")
 RERANK_MODEL_NAME = os.getenv("RERANK_MODEL_NAME", "BAAI/bge-reranker-base")
 
-MODEL_CHOICES = ["ollama", "siliconflow", "magick"]
+MODEL_CHOICES = ["ollama", "deepseek", "glm"]
 MODEL_DISPLAY_NAMES = {
     "ollama": "本地 Ollama 模型",
-    "siliconflow": "Cloud DeepSeek-R1 模型",
-    "magick": "Magick API 模型"
+    "deepseek": "DeepSeek 云端模型",
+    "glm": "智谱 GLM 云端模型"
 }
 
 
@@ -69,16 +91,16 @@ def is_configured_api_key(api_key):
     return bool(api_key and api_key.strip() and not api_key.strip().startswith("Your"))
 
 
-def choose_default_model(siliconflow_key, magick_key, ollama_available=False):
+def choose_default_model(deepseek_key, glm_key, ollama_available=False):
     """按稳定、可测试的优先级选择默认模型后端。"""
-    if is_configured_api_key(siliconflow_key):
-        return "siliconflow"
-    if is_configured_api_key(magick_key):
-        return "magick"
+    if is_configured_api_key(deepseek_key):
+        return "deepseek"
+    if is_configured_api_key(glm_key):
+        return "glm"
     if ollama_available:
         return "ollama"
     # 保持 UI 的默认选项稳定；启动检查会给出明确的未配置提示。
-    return "siliconflow"
+    return "deepseek"
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 第四步：RAG 超参数
@@ -115,28 +137,28 @@ def detect_default_model():
     自动检测可用的 LLM 后端，返回默认模型选择
 
     检测优先级：
-    1. SiliconFlow API Key 已配置 → 默认使用云端 API
-    2. Magick API Key 已配置 → 默认使用 Magick API
+    1. DeepSeek API Key 已配置 → 默认使用 DeepSeek
+    2. GLM API Key 已配置 → 默认使用智谱 GLM
     3. 本地 Ollama 服务可用 → 默认使用本地模型
-    4. 都不可用 → 返回 siliconflow 并提示用户配置
+    4. 都不可用 → 返回 deepseek 并提示用户配置
     """
-    if is_configured_api_key(SILICONFLOW_API_KEY):
-        logging.info("✅ 检测到 SiliconFlow API Key，默认使用云端模型")
-        return choose_default_model(SILICONFLOW_API_KEY, MAGICK_API_KEY)
+    if is_configured_api_key(DEEPSEEK_API_KEY):
+        logging.info("✅ 检测到 DeepSeek API Key，默认使用 DeepSeek")
+        return choose_default_model(DEEPSEEK_API_KEY, GLM_API_KEY)
 
-    if is_configured_api_key(MAGICK_API_KEY):
-        logging.info("✅ 检测到 Magick API Key，默认使用 Magick API 模型")
-        return choose_default_model(SILICONFLOW_API_KEY, MAGICK_API_KEY)
+    if is_configured_api_key(GLM_API_KEY):
+        logging.info("✅ 检测到 GLM API Key，默认使用智谱 GLM")
+        return choose_default_model(DEEPSEEK_API_KEY, GLM_API_KEY)
 
     try:
         response = requests.get("http://localhost:11434/api/tags", timeout=3)
         if response.status_code == 200:
             logging.info("✅ 检测到本地 Ollama 服务，默认使用本地模型")
-            return choose_default_model(SILICONFLOW_API_KEY, MAGICK_API_KEY, ollama_available=True)
+            return choose_default_model(DEEPSEEK_API_KEY, GLM_API_KEY, ollama_available=True)
     except Exception:
         pass
 
-    logging.warning("⚠️ 未检测到可用 LLM 后端，请配置 SiliconFlow/Magick API Key 或启动 Ollama")
-    return choose_default_model(SILICONFLOW_API_KEY, MAGICK_API_KEY)
+    logging.warning("⚠️ 未检测到可用 LLM 后端，请配置 DeepSeek/GLM API Key 或启动 Ollama")
+    return choose_default_model(DEEPSEEK_API_KEY, GLM_API_KEY)
 
 DEFAULT_MODEL_CHOICE = detect_default_model()
