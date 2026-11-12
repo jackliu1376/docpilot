@@ -53,6 +53,10 @@ CHUNK_QUERY = """
     ORDER BY d.created_at, d.filename, c.chunk_index
 """
 
+# FAISS/BM25 are process-global; serialize rebuilds across KnowledgeBase
+# instances that share the same process.
+_INDEX_LOCK = threading.RLock()
+
 
 class KnowledgeBase:
     def __init__(
@@ -130,26 +134,29 @@ class KnowledgeBase:
         ).fetchall()
         if not rows:
             self._set_meta(conn, "embedding_model", self.embed_model_name)
-            return
+            return False
 
         texts = [row["content"] for row in rows]
         embeddings = np.asarray(self.embedder(texts), dtype="float32")
         if embeddings.ndim != 2 or embeddings.shape[0] != len(rows):
             raise ValueError("embedder returned an unexpected shape")
 
-        for row, vector in zip(rows, embeddings):
-            conn.execute(
-                "UPDATE chunks SET embedding = ? WHERE id = ?",
-                (vector.tobytes(), row["id"]),
-            )
+        conn.executemany(
+            "UPDATE chunks SET embedding = ? WHERE id = ?",
+            [
+                (vector.tobytes(), row["id"])
+                for row, vector in zip(rows, embeddings)
+            ],
+        )
         self._set_meta(conn, "embedding_model", self.embed_model_name)
         self._set_meta(conn, "embedding_dim", embeddings.shape[1])
+        return True
 
     def _ensure_embedding_model(self, conn):
         stored_model = self._get_meta(conn, "embedding_model")
         if stored_model == self.embed_model_name:
-            return
-        self._reembed_all_in_conn(conn)
+            return False
+        return self._reembed_all_in_conn(conn)
 
     def list_documents(self):
         with closing(self._connect()) as conn:
@@ -189,9 +196,10 @@ class KnowledgeBase:
 
     def add_files(self, files):
         results = []
+        changed = False
         with self._lock:
             with closing(self._connect()) as conn, conn:
-                self._ensure_embedding_model(conn)
+                changed = self._ensure_embedding_model(conn)
 
             for upload in files:
                 filename = None
@@ -292,12 +300,14 @@ class KnowledgeBase:
                         else f"内容已更新，处理 {len(chunks)} 个文本块"
                     )
                     results.append(FileResult(filename, status, len(chunks), message))
+                    changed = True
                 except Exception as exc:
                     results.append(
                         FileResult(filename or str(upload), "error", 0, str(exc))
                     )
 
-            self.load()
+            if changed:
+                self.load()
         return results
 
     def delete_document(self, filename):
@@ -307,7 +317,8 @@ class KnowledgeBase:
                     "DELETE FROM documents WHERE filename = ?", (filename,)
                 )
                 deleted = cursor.rowcount > 0
-            self.load()
+            if deleted:
+                self.load()
             return deleted
 
     def clear(self):
@@ -344,19 +355,20 @@ class KnowledgeBase:
             chunk_ids = [row["chunk_id"] for row in rows]
             metadatas = [json.loads(row["metadata_json"]) for row in rows]
 
-            vector_store.clear()
-            bm25_manager.clear()
-            if chunks:
-                embeddings = np.vstack(
-                    [
-                        np.frombuffer(row["embedding"], dtype="float32")
-                        for row in rows
-                    ]
-                )
-                vector_store.build_index(
-                    chunks, chunk_ids, metadatas, embeddings
-                )
-                bm25_manager.build_index(chunks, chunk_ids)
+            with _INDEX_LOCK:
+                vector_store.clear()
+                bm25_manager.clear()
+                if chunks:
+                    embeddings = np.vstack(
+                        [
+                            np.frombuffer(row["embedding"], dtype="float32")
+                            for row in rows
+                        ]
+                    )
+                    vector_store.build_index(
+                        chunks, chunk_ids, metadatas, embeddings
+                    )
+                    bm25_manager.build_index(chunks, chunk_ids)
             return self.stats()
 
 

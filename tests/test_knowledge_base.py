@@ -1,4 +1,6 @@
 import sqlite3
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
@@ -204,3 +206,88 @@ def test_add_files_accepts_path_objects(tmp_path):
 
     assert results[0].status == "added"
     assert results[0].chunks == 1
+
+
+def test_two_instances_can_add_documents_to_same_db(tmp_path):
+    a = tmp_path / "a.txt"
+    b = tmp_path / "b.txt"
+    a.write_text("AAAAAAAAAA", encoding="utf-8")
+    b.write_text("BBBBBBBBBB", encoding="utf-8")
+    kb1 = make_kb(tmp_path)
+    kb2 = make_kb(tmp_path)
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = [
+            pool.submit(kb1.add_files, [FakeFile(a)]),
+            pool.submit(kb2.add_files, [FakeFile(b)]),
+        ]
+        results = [future.result() for future in futures]
+
+    assert all(result[0].status == "added" for result in results)
+    assert kb1.stats().documents == 2
+    assert kb1.stats().chunks == 2
+
+
+def test_index_rebuild_is_serialized_across_instances(tmp_path, monkeypatch):
+    path = tmp_path / "a.txt"
+    path.write_text("abcdefghij", encoding="utf-8")
+    kb1 = make_kb(tmp_path)
+    kb1.add_files([FakeFile(path)])
+    kb2 = make_kb(tmp_path)
+
+    active = {"count": 0, "max": 0}
+    guard = threading.Lock()
+    original_build = vector_store.build_index
+
+    def guarded_build(*args, **kwargs):
+        with guard:
+            active["count"] += 1
+            active["max"] = max(active["max"], active["count"])
+        time.sleep(0.05)
+        try:
+            return original_build(*args, **kwargs)
+        finally:
+            with guard:
+                active["count"] -= 1
+
+    monkeypatch.setattr(vector_store, "build_index", guarded_build)
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        list(pool.map(lambda kb: kb.load(), [kb1, kb2]))
+
+    assert active["max"] == 1
+
+
+def test_unchanged_only_batch_does_not_reload(tmp_path, monkeypatch):
+    path = tmp_path / "a.txt"
+    path.write_text("abcdefghij", encoding="utf-8")
+    kb = make_kb(tmp_path)
+    kb.add_files([FakeFile(path)])
+
+    calls = {"count": 0}
+    original_load = kb.load
+
+    def counted_load():
+        calls["count"] += 1
+        return original_load()
+
+    monkeypatch.setattr(kb, "load", counted_load)
+    results = kb.add_files([FakeFile(path)])
+
+    assert results[0].status == "unchanged"
+    assert calls["count"] == 0
+
+
+def test_delete_missing_document_does_not_reload(tmp_path, monkeypatch):
+    kb = make_kb(tmp_path)
+    calls = {"count": 0}
+    original_load = kb.load
+
+    def counted_load():
+        calls["count"] += 1
+        return original_load()
+
+    monkeypatch.setattr(kb, "load", counted_load)
+
+    assert kb.delete_document("missing.txt") is False
+    assert calls["count"] == 0

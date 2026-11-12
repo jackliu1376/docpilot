@@ -1,13 +1,13 @@
 {
   "corpus_files": [
-    "D:\\vscode-project\\Local_Pdf_Chat_RAG\\挖掘机维修案例(样例）.pdf",
-    "D:\\vscode-project\\Local_Pdf_Chat_RAG\\eval\\data\\1.pptx",
-    "D:\\vscode-project\\Local_Pdf_Chat_RAG\\eval\\data\\3系统总线.pptx",
-    "D:\\vscode-project\\Local_Pdf_Chat_RAG\\eval\\data\\6计算机的运算方法1.pptx",
-    "D:\\vscode-project\\Local_Pdf_Chat_RAG\\eval\\data\\7指令系统.pptx",
-    "D:\\vscode-project\\Local_Pdf_Chat_RAG\\eval\\data\\8CPU的结构和功能.pptx",
-    "D:\\vscode-project\\Local_Pdf_Chat_RAG\\eval\\data\\gzx9控制单元的功能.pptx",
-    "D:\\vscode-project\\Local_Pdf_Chat_RAG\\eval\\data\\数据库课程设计题目汇总-2024.pdf"
+    "挖掘机维修案例(样例）.pdf",
+    "eval/data/1.pptx",
+    "eval/data/3系统总线.pptx",
+    "eval/data/6计算机的运算方法1.pptx",
+    "eval/data/7指令系统.pptx",
+    "eval/data/8CPU的结构和功能.pptx",
+    "eval/data/gzx9控制单元的功能.pptx",
+    "eval/data/数据库课程设计题目汇总-2024.pdf"
   ],
   "documents": [
     {
@@ -51,7 +51,7 @@
       "chunks": 36
     }
   ],
-  "dataset": "D:\\vscode-project\\Local_Pdf_Chat_RAG\\eval\\golden_qa.jsonl",
+  "dataset": "eval/golden_qa.jsonl",
   "k": 5,
   "retrieval_top_k": 10,
   "rerank": false,

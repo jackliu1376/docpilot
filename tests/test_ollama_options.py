@@ -22,6 +22,8 @@ class FakeSession:
 
 def test_query_answer_limits_ollama_output_and_uses_configured_timeout(monkeypatch):
     session = FakeSession()
+    monkeypatch.setattr(generator, "OLLAMA_MAX_OUTPUT_TOKENS", 1024)
+    monkeypatch.setattr(generator, "OLLAMA_TIMEOUT_SECONDS", 300)
     monkeypatch.setattr(generator, "get_session", lambda: session)
     monkeypatch.setattr(generator, "vector_store", SimpleNamespace(is_ready=True))
     monkeypatch.setattr(
@@ -40,6 +42,8 @@ def test_query_answer_limits_ollama_output_and_uses_configured_timeout(monkeypat
 
 def test_call_llm_simple_limits_query_rewrite_output(monkeypatch):
     session = FakeSession()
+    monkeypatch.setattr(generator, "OLLAMA_QUERY_MAX_TOKENS", 64)
+    monkeypatch.setattr(generator, "OLLAMA_TIMEOUT_SECONDS", 300)
     monkeypatch.setattr(generator, "get_session", lambda: session)
 
     result = generator.call_llm_simple("prompt", "ollama")

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-Local PDF Chat RAG is an educational/reference RAG implementation (Python 3.10+) with two entry points: a Gradio web UI (`rag_demo.py`) and a FastAPI REST API (`api_router.py`). It supports local Ollama, SiliconFlow, and OpenAI-compatible Magick backends, plus optional SerpAPI web search. It is explicitly not a production service: no auth or tenancy; persistence is single-user SQLite.
+DocPilot is an educational/reference RAG implementation (Python 3.10+) with two entry points: a Gradio web UI (`rag_demo.py`) and a FastAPI REST API (`api_router.py`). It supports local Ollama, SiliconFlow, and OpenAI-compatible Magick backends, plus optional SerpAPI web search. It is explicitly not a production service: no auth or tenancy; persistence is single-user SQLite.
 
 The knowledge base is persisted in SQLite at `data/rag.db` (gitignored; `RAG_DATA_DIR` overrides). `vector_store` and `bm25_manager` are derived in-memory indexes rebuilt from SQLite at startup and after writes. `chunk_data_cache` and model caches remain in memory.
 
@@ -23,7 +23,7 @@ python rag_demo.py               # Gradio UI (opens browser)
 python api_router.py             # FastAPI on 0.0.0.0
 ```
 
-Both servers try ports 17995–17999 in order. API: `GET /api/status`, `POST /api/upload`, `POST /api/ask`, `GET /api/documents`, `DELETE /api/documents/{filename}`, `POST /api/clear`.
+Both servers try ports 17995–17999 in order. API: `GET /api/status`, `POST /api/upload`, `POST /api/ask` (returns answer + structured sources), `GET /api/documents`, `DELETE /api/documents/{filename}`, `POST /api/clear`.
 
 ```bash
 # Tests (the env var matters: langchain auto-installs the LangSmith pytest plugin)
@@ -39,7 +39,7 @@ python -m pytest -p pytest_cov.plugin --cov=core --cov=config --cov-report=term-
 `pytest.ini` sets `testpaths = tests` and `pythonpath = .`. Persistence and API tests use a temporary SQLite DB with injected fake extractor/splitter/embedder:
 
 ```bash
-PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest tests/test_knowledge_base.py tests/test_api_documents.py -v
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest tests/test_knowledge_base.py tests/test_api_documents.py tests/test_answer.py -v
 ```
 
 ```bash
@@ -47,9 +47,12 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest tests/test_knowledge_base.py t
 PYTHONIOENCODING=utf-8 python -m eval.run_retrieval_eval --k 5
 PYTHONIOENCODING=utf-8 python -m eval.run_retrieval_eval --k 5 --rerank
 PYTHONIOENCODING=utf-8 python -m eval.run_retrieval_eval --k 5 --json-out eval/results/baseline.json
+
+# Answer-level evaluation (full pipeline; requires Ollama, slow)
+PYTHONIOENCODING=utf-8 python -m eval.run_answer_eval --limit 10 --model-choice ollama
 ```
 
-`eval/golden_qa.jsonl` holds the golden questions; a chunk is relevant when its whitespace-stripped text contains any `relevant_snippets` entry. Metrics live in `eval/retrieval_metrics.py`.
+`eval/golden_qa.jsonl` holds the golden questions; a chunk is relevant when its whitespace-stripped text contains any `relevant_snippets` entry. Retrieval metrics live in `eval/retrieval_metrics.py`; answer metrics (token F1, citation precision/recall) live in `eval/answer_metrics.py`.
 
 Tests must remain credential-free and network-free. Note that `tests/test_api_status.py` asserts API keys are **not** configured, so a real `.env` with live keys can make the suite fail locally.
 
@@ -75,13 +78,13 @@ SHA-256 file hash -> dedup/replace decision
 
 ### Query pipeline
 
-Both interfaces call `core.generator.query_answer()` (or `stream_answer()`), which runs:
+Both interfaces call `core.generator.answer_question()`, which returns an `AnswerResult(answer, sources, metadata)`. `query_answer()` is a string-only compatibility wrapper; `stream_answer()` remains string-based.
 
 1. `recursive_retrieval()` (`core/retriever.py`) — up to `MAX_RETRIEVAL_ITERATIONS` rounds. Each round optionally appends SerpAPI web snippets (deduplicated, not indexed), queries FAISS, queries BM25, merges with `hybrid_merge()` (weighted rank scores: `alpha` semantic + `1-alpha` BM25), reranks, then asks the LLM to rewrite the query. Returns parallel lists `(contexts, doc_ids, metadata)`.
-2. `_build_context()` — formats sources as `[本地文档: ...]` or `[网络来源: ...] (URL: ...)` and builds source dicts.
+2. `_build_context()` — labels context blocks `[S1]`, `[S2]`, ... and returns typed `Source` objects (id, kind, snippet, filename/chunk or web URL metadata).
 3. `detect_conflicts()` (`features/conflict_detector.py`) and a keyword check for time-sensitive questions.
-4. `_build_prompt()` — the prompt instructs the model to use only retrieved content and explicitly treats retrieved text as untrusted data. Preserve that instruction when editing prompts.
-5. Backend call (`siliconflow`/`magick` via shared OpenAI-compatible helper, `ollama` via `/api/generate`), then `process_thinking_content()` converts `<think>...</think>` into a collapsible `<details>` block and escapes other HTML.
+4. `_build_prompt()` — the prompt instructs the model to use only retrieved content, cite `[S1]` inline, and explicitly treats retrieved text as untrusted data. Preserve the untrusted-data instruction when editing prompts.
+5. Backend call (`siliconflow`/`magick` via shared OpenAI-compatible helper, `ollama` via `/api/generate`), then `process_thinking_content()` converts `<think>...</think>` into a collapsible `<details>` block and escapes other HTML. `/api/ask` returns the structured `sources`; the UI appends a source list under the answer.
 
 Cloud API helpers return error text instead of raising; callers generally surface strings as answers. Keep new failure paths actionable (README/CONTRIBUTING requirement) and avoid HTTP calls when a key is missing — `tests/test_no_key_fallback.py` enforces this.
 

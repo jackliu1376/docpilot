@@ -23,13 +23,14 @@ from datetime import datetime
 from config import (
     DEFAULT_MODEL_CHOICE, SILICONFLOW_API_KEY, MAGICK_API_KEY,
     OLLAMA_MODEL_NAME, SILICONFLOW_MODEL_NAME, MAGICK_MODEL_NAME,
-    EMBED_MODEL_NAME, MODEL_CHOICES, MODEL_DISPLAY_NAMES, is_configured_api_key
+    EMBED_MODEL_NAME, RERANK_MODEL_NAME,
+    MODEL_CHOICES, MODEL_DISPLAY_NAMES, is_configured_api_key
 )
 
 # 导入核心模块
 from core.knowledge_base import knowledge_base
 from core.vector_store import vector_store
-from core.generator import query_answer, call_siliconflow_api, call_magick_api
+from core.generator import answer_question, call_siliconflow_api, call_magick_api
 
 # 导入工具
 from utils.network import is_port_available
@@ -159,7 +160,7 @@ def get_system_models_info():
         "嵌入模型": EMBED_MODEL_NAME,
         "分块方法": "RecursiveCharacterTextSplitter (chunk_size=400, overlap=40)",
         "检索方法": "向量检索 + BM25混合检索 (α=0.7)",
-        "重排序模型": "交叉编码器 (distiluse-base-multilingual-cased-v2)",
+        "重排序模型": f"交叉编码器 ({RERANK_MODEL_NAME})",
         "生成模型(Ollama)": OLLAMA_MODEL_NAME,
         "生成模型(SiliconFlow)": SILICONFLOW_MODEL_NAME,
         "生成模型(Magick API)": MAGICK_MODEL_NAME,
@@ -349,7 +350,16 @@ with gr.Blocks(title="本地RAG问答系统") as demo:
             return history, "", api_text
 
         try:
-            answer = query_answer(question, enable_web_search, model_choice_val)
+            result = answer_question(question, enable_web_search, model_choice_val)
+            answer = result.answer
+            if result.sources:
+                lines = ["", "---", "**来源**"]
+                for source in result.sources:
+                    label = source.filename or source.title or source.url or "未知来源"
+                    if source.kind == "local" and source.chunk_index is not None:
+                        label = f"{label} · chunk {source.chunk_index}"
+                    lines.append(f"- [{source.id}] {label}")
+                answer = answer + "\n".join(lines)
         except Exception as e:
             answer = f"系统错误: {str(e)}"
             logging.error(f"问答处理异常: {str(e)}")

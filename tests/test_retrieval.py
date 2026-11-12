@@ -1,3 +1,5 @@
+from dataclasses import asdict
+
 import numpy as np
 import pytest
 
@@ -102,22 +104,34 @@ def test_recursive_retrieval_returns_web_results_with_source_metadata(monkeypatc
         metadata,
         enable_web_search=True,
     )
+    assert final_context.startswith("[S1] [网络来源:")
+    assert "[S2] [本地文档: local.pdf]" in final_context
     assert web_result["snippet"] in final_context
     assert web_result["url"] in final_context
     assert web_result["timestamp"] in final_context
     assert "Local retrieval context." in final_context
-    assert sources == [
+    assert [asdict(source) for source in sources] == [
         {
-            "text": web_result["snippet"],
-            "type": "web",
+            "id": "S1",
+            "kind": "web",
+            "snippet": web_result["snippet"],
+            "filename": None,
+            "chunk_id": None,
+            "chunk_index": None,
             "url": web_result["url"],
             "title": web_result["title"],
             "timestamp": web_result["timestamp"],
         },
         {
-            "text": "Local retrieval context.",
-            "type": "local.pdf",
-            "source": "local.pdf",
+            "id": "S2",
+            "kind": "local",
+            "snippet": "Local retrieval context.",
+            "filename": "local.pdf",
+            "chunk_id": "doc-local",
+            "chunk_index": None,
+            "url": None,
+            "title": None,
+            "timestamp": None,
         },
     ]
 

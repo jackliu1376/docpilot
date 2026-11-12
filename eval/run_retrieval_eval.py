@@ -119,6 +119,14 @@ def retrieve(question, retrieval_top_k, rerank, k):
     return [doc_id for doc_id, _ in hybrid]
 
 
+def display_path(path):
+    """Use repository-relative paths in committed reports."""
+    try:
+        return str(Path(path).relative_to(REPO_ROOT)).replace("\\", "/")
+    except ValueError:
+        return str(path)
+
+
 def collect_corpus_files(explicit_files):
     if explicit_files:
         return [Path(path) for path in explicit_files]
@@ -220,9 +228,9 @@ def main():
         )
 
     report = {
-        "corpus_files": [str(path) for path in corpus_files],
+        "corpus_files": [display_path(path) for path in corpus_files],
         "documents": documents,
-        "dataset": str(args.dataset),
+        "dataset": display_path(args.dataset),
         "k": args.k,
         "retrieval_top_k": args.retrieval_top_k,
         "rerank": args.rerank,

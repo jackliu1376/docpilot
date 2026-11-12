@@ -1,51 +1,48 @@
 <div align="center">
 
-# Local PDF Chat RAG
+# DocPilot
 
-A transparent, runnable Python implementation for learning and inspecting RAG
+A local-first document RAG assistant with persistent knowledge, structured citations, and evaluation
 
 English | [简体中文](README.zh-CN.md)
 
-[![CI](https://github.com/weiwill88/Local_Pdf_Chat_RAG/actions/workflows/ci.yml/badge.svg)](https://github.com/weiwill88/Local_Pdf_Chat_RAG/actions/workflows/ci.yml)
+[![CI](https://github.com/jackliu1376/docpilot/actions/workflows/ci.yml/badge.svg)](https://github.com/jackliu1376/docpilot/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
-[![Release](https://img.shields.io/github/v/release/weiwill88/Local_Pdf_Chat_RAG)](https://github.com/weiwill88/Local_Pdf_Chat_RAG/releases)
-[![Stars](https://img.shields.io/github/stars/weiwill88/Local_Pdf_Chat_RAG?style=social)](https://github.com/weiwill88/Local_Pdf_Chat_RAG/stargazers)
 
 </div>
 
-Local PDF Chat RAG is an educational and reference implementation for developers who want to inspect the complete retrieval-augmented generation pipeline. Document loading, chunking, embeddings, FAISS, BM25, hybrid retrieval, reranking, and answer generation are split into readable and replaceable modules. The repository includes both a Gradio UI and a FastAPI interface.
+DocPilot is a local-first RAG document assistant built for inspection and extension. Document loading, chunking, embeddings, FAISS, BM25, hybrid retrieval, reranking, citations, and answer generation are split into readable, replaceable modules. It ships with a Gradio UI, a FastAPI interface, SQLite persistence, and a retrieval/answer evaluation harness.
 
-> This repository is intended for learning and experimentation. It is not a production-ready knowledge-base service. Add authentication, tenant isolation, persistence, evaluation, security controls, and deployment governance before using it with real business data.
+> It is an educational and portfolio-oriented implementation, not a production-ready knowledge-base service. Add authentication, tenant isolation, security controls, and deployment governance before using real business data.
 
-![Current Local PDF Chat RAG interface](images/demo-current.png)
+![DocPilot interface](images/demo-current.png)
 
-## Usage and maintenance
+## Project status
 
-Repository snapshot as of **2026-08-31**:
+This repository extends the original educational RAG demo with:
 
-| Signal | Verifiable snapshot |
-| --- | --- |
-| Adoption | [951 stars](https://github.com/weiwill88/Local_Pdf_Chat_RAG/stargazers) and [179 forks](https://github.com/weiwill88/Local_Pdf_Chat_RAG/forks) |
-| Recent GitHub traffic | 105 unique visitors and 78 unique cloners in the latest 14-day window, through 2026-08-30 |
-| Release history | [2 published releases](https://github.com/weiwill88/Local_Pdf_Chat_RAG/releases); current version: [`v2.1.0`](https://github.com/weiwill88/Local_Pdf_Chat_RAG/releases/tag/v2.1.0) |
-| Maintenance activity | [5 commits in the last 90 days](https://github.com/weiwill88/Local_Pdf_Chat_RAG/commits/main/), with the latest `main` update on 2026-08-16 |
-| Continuous integration | [Latest `main` CI run passed](https://github.com/weiwill88/Local_Pdf_Chat_RAG/actions/workflows/ci.yml); source compilation and credential-free tests run on pull requests |
-| Issue and PR handling | [38 issues closed](https://github.com/weiwill88/Local_Pdf_Chat_RAG/issues?q=is%3Aissue+state%3Aclosed) and [0 open](https://github.com/weiwill88/Local_Pdf_Chat_RAG/issues?q=is%3Aissue+state%3Aopen); [9 pull requests merged](https://github.com/weiwill88/Local_Pdf_Chat_RAG/pulls?q=is%3Apr+is%3Amerged) and [1 under review](https://github.com/weiwill88/Local_Pdf_Chat_RAG/pulls?q=is%3Apr+state%3Aopen) |
+- SQLite-backed persistence and incremental indexing
+- Chinese BGE embeddings and a real CrossEncoder reranker
+- Structured `[S1]` citations returned by the API and shown in the UI
+- Retrieval and answer-level evaluation harnesses
+- 56 credential-free tests
 
-Recent maintenance includes reviewing and merging an [external retrieval fix](https://github.com/weiwill88/Local_Pdf_Chat_RAG/pull/55), publishing bilingual documentation, adding credential-free tests and GitHub Actions CI, adopting the MIT license, and documenting a private security-reporting process.
-
-Stars, forks, and traffic are dated GitHub snapshots. Traffic and clone counts indicate repository interest, not verified installations or production deployments. See the repository, [Actions](https://github.com/weiwill88/Local_Pdf_Chat_RAG/actions), and [Releases](https://github.com/weiwill88/Local_Pdf_Chat_RAG/releases) for the current state.
+Retrieval baseline (8 files, 140 chunks, 46 questions): Chinese BGE + BGE reranker reaches
+**Recall@5 0.8982**, **MRR@5 0.8822**, and **nDCG@5 0.8446**. The answer-level smoke run reports
+token F1 0.1486 and citation precision/recall 0.5000 on two questions; see [`eval/README.md`](eval/README.md)
+for the full setup.
 
 ## Why this project
 
+- **Persistent knowledge base**: SQLite + incremental dedup/replace; restart without re-uploading.
 - **Inspectable pipeline**: core modules follow the order in which a RAG request is processed.
 - **Hybrid retrieval**: combines FAISS dense retrieval with BM25 keyword retrieval.
-- **Optional reranking**: supports a CrossEncoder or model-based relevance scoring.
+- **Structured citations**: `[S1]` labels with filename/chunk and web-source metadata.
+- **Measurable quality**: retrieval and answer-level evaluation harnesses.
 - **Multiple model backends**: local Ollama, SiliconFlow, and OpenAI-compatible APIs.
 - **Document support**: PDF, TXT, Markdown, DOCX, XLS/XLSX, and PPTX.
 - **Two interfaces**: a Gradio web application and a FastAPI REST API.
-- **Verifiable maintenance**: automated tests, GitHub Actions CI, contribution guidance, and a security-reporting process.
 
 ## RAG pipeline
 
@@ -69,8 +66,8 @@ flowchart LR
 ### 1. Create an environment
 
 ```bash
-git clone https://github.com/weiwill88/Local_Pdf_Chat_RAG.git
-cd Local_Pdf_Chat_RAG
+git clone https://github.com/jackliu1376/docpilot.git
+cd docpilot
 
 python3.10 -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
@@ -110,7 +107,7 @@ Main endpoints:
 
 - `GET /api/status`: runtime, document-count, and provider configuration status;
 - `POST /api/upload`: upload and persist a document;
-- `POST /api/ask`: ask a question against persisted documents;
+- `POST /api/ask`: ask a question; returns the answer and structured sources;
 - `GET /api/documents`: list persisted documents;
 - `DELETE /api/documents/{filename}`: remove a document;
 - `POST /api/clear`: clear the knowledge base.
@@ -128,6 +125,7 @@ Main endpoints:
 │   ├── vector_store.py        # FAISS index
 │   ├── bm25_index.py          # BM25 index
 │   ├── knowledge_base.py     # SQLite persistence and incremental indexing
+│   ├── answer.py              # Structured sources and citation parsing
 │   ├── retriever.py           # Hybrid and recursive retrieval
 │   ├── reranker.py            # Result reranking
 │   └── generator.py           # Context and answer generation
@@ -146,9 +144,10 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest
 The current suite covers:
 
 - configuration and default backend selection;
-- TXT, Markdown, and unsupported-file loading behavior;
-- BM25 and hybrid-result merging;
-- clean, network-free failure when an API key is missing.
+- document loading and unsupported-file behavior;
+- BM25/hybrid retrieval and answer/citation metrics;
+- SQLite persistence, dedup/replace, and API document endpoints;
+- structured answer sources and missing-key fallback.
 
 GitHub Actions compiles the Python sources and runs the test suite for every pull request.
 
@@ -191,6 +190,17 @@ cross-process writes.
 The evaluation harness (`eval/run_retrieval_eval.py`) builds its own in-memory
 index from `eval/data/`; it does not use the persisted knowledge base.
 
+## Structured citations
+
+`/api/ask` returns `answer`, `sources`, and `metadata`. Each source has an `id`
+(`S1`, `S2`, ...), `kind` (`local` or `web`), `snippet`, and the relevant
+filename/chunk or web URL metadata. The prompt asks the model to cite `[S1]`
+inline, and the Gradio UI appends the source list under the answer.
+
+The answer-level harness in `eval/run_answer_eval.py` measures token F1,
+citation precision/recall, and refusal rate. It calls Ollama, so start with
+`--limit` and see `eval/README.md` for details.
+
 ## Known limitations
 
 - PDF extraction reads the text layer and does not provide general-purpose OCR.
@@ -208,8 +218,15 @@ Do not open a public issue for a vulnerability. Follow [`SECURITY.md`](SECURITY.
 ## Releases and maintenance
 
 - Changelog: [`CHANGELOG.md`](CHANGELOG.md)
-- Releases: [GitHub Releases](https://github.com/weiwill88/Local_Pdf_Chat_RAG/releases)
-- Maintainer: [Will Wei](https://github.com/weiwill88)
+- Releases: [GitHub Releases](https://github.com/jackliu1376/docpilot/releases)
+- Maintainer: [jackliu1376](https://github.com/jackliu1376)
+
+## Attribution
+
+This project started from the MIT-licensed
+[Local PDF Chat RAG](https://github.com/weiwill88/Local_Pdf_Chat_RAG) by Will Wei.
+SQLite persistence, Chinese BGE retrieval, structured citations, and the evaluation
+harness are additions in this repository.
 
 ## License
 

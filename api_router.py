@@ -7,7 +7,6 @@ from pydantic import BaseModel
 from dataclasses import asdict
 import tempfile
 import os
-import re
 from typing import Dict, Any, List, Optional
 import logging
 import asyncio
@@ -16,7 +15,7 @@ from version import __version__
 
 # 从重构后的模块导入
 from config import SILICONFLOW_API_KEY, MAGICK_API_KEY, is_configured_api_key
-from core.generator import query_answer
+from core.generator import answer_question
 from core.knowledge_base import knowledge_base
 from core.vector_store import vector_store
 from features.web_search import check_serpapi_key
@@ -70,7 +69,9 @@ class FileProcessResult(BaseModel):
 async def upload_file(file: UploadFile = File(...)):
     """处理文档并持久化到知识库"""
     try:
-        safe_name = os.path.basename(file.filename or "upload")
+        safe_name = os.path.basename(file.filename or "")
+        if not safe_name or safe_name in {".", ".."}:
+            raise HTTPException(400, "无效的文件名")
         content = await file.read()
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -92,9 +93,11 @@ async def upload_file(file: UploadFile = File(...)):
                 "total_chunks": stats.chunks,
             },
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"文件处理失败: {str(e)}")
-        raise HTTPException(500, f"文档处理失败: {str(e)}") from e
+        raise HTTPException(500, "文档处理失败，请检查文件格式或服务日志") from e
 
 
 @app.post("/api/ask", response_model=AnswerResponse)
@@ -103,15 +106,13 @@ async def ask_question(req: QuestionRequest):
     if not req.question:
         raise HTTPException(400, "问题不能为空")
     try:
-        answer = await asyncio.to_thread(query_answer, req.question, req.enable_web_search, req.model_choice)
-        sources = []
-        url_matches = re.findall(r'\[(网络来源|本地文档):[^\]]+\]\s*(?:\(URL:\s*([^)]+)\))?', answer)
-        for source_type, url in url_matches:
-            sources.append({"type": source_type, "url": url} if url else {"type": source_type})
-
+        result = await asyncio.to_thread(
+            answer_question, req.question, req.enable_web_search, req.model_choice
+        )
         return {
-            "answer": answer, "sources": sources,
-            "metadata": {"enable_web_search": req.enable_web_search, "model": req.model_choice}
+            "answer": result.answer,
+            "sources": [asdict(source) for source in result.sources],
+            "metadata": result.metadata,
         }
     except Exception as e:
         logger.error(f"问答失败: {str(e)}")
@@ -129,7 +130,8 @@ async def check_status():
         "documents": stats.documents,
         "embedding_model": stats.embedding_model,
         "vector_store_ready": vector_store.is_ready,
-        "total_chunks": vector_store.total_chunks,
+        "total_chunks": stats.chunks,
+        "indexed_chunks": vector_store.total_chunks,
         "version": __version__
     }
 

@@ -8,6 +8,7 @@ class FakeCrossEncoder:
 
 
 def test_get_cross_encoder_loads_the_configured_reranker_model(monkeypatch):
+    monkeypatch.setattr(reranker, "RERANK_MODEL_NAME", "BAAI/bge-reranker-base")
     monkeypatch.setattr("sentence_transformers.CrossEncoder", FakeCrossEncoder)
     monkeypatch.setattr(reranker, "_cross_encoder", None)
 

@@ -1,6 +1,6 @@
-# 检索评测集
+# RAG 评测集
 
-给 RAG 检索链路一个可重复的基线，避免凭感觉调参。
+给检索和答案链路一个可重复的基线，避免凭感觉调参。
 
 ## 数据格式
 
@@ -58,15 +58,46 @@ EMBED_QUERY_PREFIX=为这个句子生成表示以用于检索相关文章：
 - 中文 BGE + 重排取得最高 Recall@5 和 nDCG@5；MRR 与“英文 + 重排”基本持平
 - 当前最佳配置下，46 条问题中只有 `float-bits` 仍然 miss，说明它的相关 chunk 不在 top-10 候选内
 
+## 答案级评测
+
+答案评测会跑完整的检索 + 生成链路，需要本地 Ollama 可用：
+
+```bash
+# 先跑少量问题，避免 46 条全量耗时过长
+PYTHONIOENCODING=utf-8 python -m eval.run_answer_eval \
+  --limit 10 --model-choice ollama \
+  --json-out eval/results/answer.json
+```
+
+指标：
+
+- **Token F1**：生成答案与参考答案的词级 F1
+- **Citation precision / recall**：解析回答中的 `[S1]` 引用，检查被引用来源是否覆盖 golden snippets
+- **Refusal rate**：出现“无法回答/信息不足”等拒答的比例
+
+2 条问题的冒烟结果（本地 `qwen2.5:3b`）：
+
+| 指标 | 结果 |
+|---|---|
+| Token F1 | 0.1486 |
+| Citation precision | 0.5000 |
+| Citation recall | 0.5000 |
+| Refusal rate | 0.0000 |
+
+这是很小的样本，主要用于验证链路和指标；正式对比建议跑 20 条以上。3B 模型的回答通常比参考答案更长，Token F1 会偏低，引用指标更能反映“答案是否有依据”。
+
 ## 指标说明
 
 - **Recall@k**：top-k 中命中的相关 chunk 占全部相关 chunk 的比例
 - **MRR@k**：第一个相关 chunk 的倒数排名
 - **nDCG@k**：按排名加权的相关性，越靠前的相关结果得分越高
+- **Token F1**：答案与参考答案的 token 级 F1
+- **Citation precision**：被引用来源中真正相关来源的比例
+- **Citation recall**：相关来源中被回答引用的比例
 
 ## 已知局限
 
 - 46 条问题覆盖 8 个文件；最佳配置下仍有 `float-bits` 等少数题目的相关 chunk 不在 top-10 候选内
-- 目前只评测检索，不评测生成答案的 faithfulness 和引用正确率
+- 答案评测目前使用词面 F1 和引用匹配，没有接入 LLM faithfulness judge
 - 相关 chunk 通过答案片段匹配确定；片段应尽量短且唯一，避免跨 chunk 边界
 - `eval/data/` 中的课件和 PDF 是本地评测语料，是否纳入版本控制需自行判断

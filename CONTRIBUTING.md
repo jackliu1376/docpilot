@@ -1,4 +1,4 @@
-# Contributing to Local PDF Chat RAG
+# Contributing to DocPilot
 
 Thanks for helping improve this project. Contributions should keep the RAG pipeline understandable, runnable, and easy to inspect.
 
@@ -14,8 +14,8 @@ Security vulnerabilities must follow [`SECURITY.md`](SECURITY.md) and must not b
 ## Development setup
 
 ```bash
-git clone https://github.com/weiwill88/Local_Pdf_Chat_RAG.git
-cd Local_Pdf_Chat_RAG
+git clone https://github.com/jackliu1376/docpilot.git
+cd docpilot
 python3.10 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip

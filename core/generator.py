@@ -18,6 +18,7 @@ from config import (
     OLLAMA_MAX_OUTPUT_TOKENS, OLLAMA_QUERY_MAX_TOKENS, OLLAMA_TIMEOUT_SECONDS
 )
 from utils.network import get_session
+from core.answer import AnswerResult, Source
 from core.retriever import recursive_retrieval
 from core.vector_store import vector_store
 from features.conflict_detector import detect_conflicts, evaluate_source_credibility
@@ -186,7 +187,7 @@ def _build_prompt(question, context, enable_web_search, knowledge_base_exists,
 3. 如果参考内容中没有足够信息，请坦诚告知你无法回答
 4. 回答应该全面、准确、有条理，并使用适当的段落和结构
 5. 请用中文回答
-6. 在回答末尾标注信息来源{time_instruction}{conflict_instruction}
+6. 在回答中使用 [S1]、[S2] 等来源编号标注引用，并在回答末尾列出引用来源{time_instruction}{conflict_instruction}
 
 请现在开始回答："""
 
@@ -202,44 +203,62 @@ def _build_prompt(question, context, enable_web_search, knowledge_base_exists,
 
 
 def _build_context(all_contexts, all_doc_ids, all_metadata, enable_web_search):
-    """构建上下文和来源信息"""
+    """构建带 [S1] 标签的上下文和结构化来源。"""
     context_parts = []
-    sources_for_conflict = []
+    sources = []
 
-    for doc, doc_id, metadata in zip(all_contexts, all_doc_ids, all_metadata):
-        source_type = metadata.get('source', '本地文档')
-        source_item = {'text': doc, 'type': source_type}
+    for index, (doc, doc_id, metadata) in enumerate(
+        zip(all_contexts, all_doc_ids, all_metadata), start=1
+    ):
+        source_id = f"S{index}"
+        source_type = metadata.get('source', 'local')
 
         if source_type == 'web':
             url = metadata.get('url', '未知URL')
             title = metadata.get('title', '未知标题')
             timestamp = metadata.get('timestamp')
             timestamp_text = f", 时间: {timestamp}" if timestamp else ""
-            context_parts.append(f"[网络来源: {title}] (URL: {url}{timestamp_text})\n{doc}")
-            source_item['url'] = url
-            source_item['title'] = title
-            if timestamp:
-                source_item['timestamp'] = timestamp
+            context_parts.append(
+                f"[{source_id}] [网络来源: {title}] (URL: {url}{timestamp_text})\n{doc}"
+            )
+            sources.append(
+                Source(
+                    id=source_id,
+                    kind="web",
+                    snippet=doc,
+                    url=url,
+                    title=title,
+                    timestamp=timestamp,
+                )
+            )
         else:
             source = metadata.get('source', '未知来源')
-            context_parts.append(f"[本地文档: {source}]\n{doc}")
-            source_item['source'] = source
+            context_parts.append(f"[{source_id}] [本地文档: {source}]\n{doc}")
+            sources.append(
+                Source(
+                    id=source_id,
+                    kind="local",
+                    snippet=doc,
+                    filename=source,
+                    chunk_id=doc_id,
+                    chunk_index=metadata.get('chunk_index'),
+                )
+            )
 
-        sources_for_conflict.append(source_item)
-
-    return "\n\n".join(context_parts), sources_for_conflict
+    return "\n\n".join(context_parts), sources
 
 
-def query_answer(question, enable_web_search=False, model_choice="siliconflow", progress=None):
-    """
-    问答处理主流程（非流式）
-
-    完整流程：递归检索 → 构建上下文 → 矛盾检测 → 构建Prompt → LLM生成
-    """
+def answer_question(question, enable_web_search=False, model_choice="siliconflow", progress=None):
+    """问答处理主流程，返回结构化答案和来源。"""
+    metadata = {"enable_web_search": enable_web_search, "model": model_choice}
     try:
         knowledge_base_exists = vector_store.is_ready
         if not knowledge_base_exists and not enable_web_search:
-            return "⚠️ 知识库为空，请先上传文档。"
+            return AnswerResult(
+                answer="⚠️ 知识库为空，请先上传文档。",
+                sources=[],
+                metadata=metadata,
+            )
 
         if progress:
             progress(0.3, desc="执行递归检索...")
@@ -249,7 +268,9 @@ def query_answer(question, enable_web_search=False, model_choice="siliconflow", 
         )
 
         context, sources = _build_context(all_contexts, all_doc_ids, all_metadata, enable_web_search)
-        conflict_detected = detect_conflicts(sources)
+        conflict_detected = detect_conflicts(
+            [{"text": source.snippet, "url": source.url} for source in sources]
+        )
         time_sensitive = any(w in question for w in ["最新", "今年", "当前", "最近", "刚刚"])
 
         prompt = _build_prompt(question, context, enable_web_search,
@@ -274,14 +295,29 @@ def query_answer(question, enable_web_search=False, model_choice="siliconflow", 
             response.raise_for_status()
             result = str(response.json().get("response", "未获取到有效回答"))
         else:
-            return f"错误：未知模型选择 {model_choice}"
+            return AnswerResult(
+                answer=f"错误：未知模型选择 {model_choice}",
+                sources=sources,
+                metadata=metadata,
+            )
 
-        return process_thinking_content(result)
+        return AnswerResult(
+            answer=process_thinking_content(result),
+            sources=sources,
+            metadata=metadata,
+        )
 
     except json.JSONDecodeError:
-        return "响应解析失败，请重试"
+        return AnswerResult(answer="响应解析失败，请重试", sources=[], metadata=metadata)
     except Exception as e:
-        return f"系统错误: {str(e)}"
+        return AnswerResult(answer=f"系统错误: {str(e)}", sources=[], metadata=metadata)
+
+
+def query_answer(question, enable_web_search=False, model_choice="siliconflow", progress=None):
+    """兼容旧调用方：只返回回答文本。"""
+    return answer_question(
+        question, enable_web_search, model_choice, progress
+    ).answer
 
 
 def stream_answer(question, enable_web_search=False, model_choice="siliconflow", progress=None):
@@ -300,7 +336,9 @@ def stream_answer(question, enable_web_search=False, model_choice="siliconflow",
         )
 
         context, sources = _build_context(all_contexts, all_doc_ids, all_metadata, enable_web_search)
-        conflict_detected = detect_conflicts(sources)
+        conflict_detected = detect_conflicts(
+            [{"text": source.snippet, "url": source.url} for source in sources]
+        )
         time_sensitive = any(w in question for w in ["最新", "今年", "当前", "最近", "刚刚"])
 
         prompt = _build_prompt(question, context, enable_web_search,

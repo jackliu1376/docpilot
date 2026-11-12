@@ -5,7 +5,7 @@ labels: [bug]
 body:
   - type: markdown
     attributes:
-      value: Thanks for helping improve Local PDF Chat RAG. Remove credentials and private documents before submitting.
+      value: Thanks for helping improve DocPilot. Remove credentials and private documents before submitting.
   - type: input
     id: version
     attributes:

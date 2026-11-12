@@ -1,51 +1,47 @@
 <div align="center">
 
-# Local PDF Chat RAG
+# DocPilot
 
-一个透明、可运行的 Python RAG 学习与参考实现
+本地优先的文档 RAG 助手：持久化知识库、结构化引用与可量化评测
 
 [English](README.md) | 简体中文
 
-[![CI](https://github.com/weiwill88/Local_Pdf_Chat_RAG/actions/workflows/ci.yml/badge.svg)](https://github.com/weiwill88/Local_Pdf_Chat_RAG/actions/workflows/ci.yml)
+[![CI](https://github.com/jackliu1376/docpilot/actions/workflows/ci.yml/badge.svg)](https://github.com/jackliu1376/docpilot/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
-[![Release](https://img.shields.io/github/v/release/weiwill88/Local_Pdf_Chat_RAG)](https://github.com/weiwill88/Local_Pdf_Chat_RAG/releases)
-[![Stars](https://img.shields.io/github/stars/weiwill88/Local_Pdf_Chat_RAG?style=social)](https://github.com/weiwill88/Local_Pdf_Chat_RAG/stargazers)
 
 </div>
 
-Local PDF Chat RAG 面向希望理解检索增强生成完整链路的开发者。项目把文档解析、文本分块、向量化、FAISS、BM25、混合检索、重排序和回答生成拆成可以单独阅读、测试和替换的模块，并提供 Gradio 界面和 FastAPI 接口。
+DocPilot 是一个本地优先的 RAG 文档助手，面向希望理解并扩展检索增强生成链路的开发者。项目把文档解析、文本分块、向量化、FAISS、BM25、混合检索、重排序、结构化引用和回答生成拆成可以单独阅读、测试和替换的模块，并提供 Gradio 界面、FastAPI 接口、SQLite 持久化和检索/答案评测。
 
-> 本仓库是教学与实验用途的参考实现，不是开箱即用的生产级知识库服务。用于真实业务前，请补充身份鉴权、租户隔离、持久化、评测、安全审计和部署治理。
+> 本仓库是教学与作品集用途的参考实现，不是开箱即用的生产级知识库服务。用于真实业务前，请补充身份鉴权、租户隔离、安全审计和部署治理。
 
-![Local PDF Chat RAG 当前界面](images/demo-current.png)
+![DocPilot 当前界面](images/demo-current.png)
 
-## 使用与维护情况
+## 项目状态
 
-截至 **2026-08-31** 的仓库快照：
+本仓库在原始教学 RAG Demo 基础上增加了：
 
-| 指标 | 可核验数据 |
-| --- | --- |
-| 项目采用 | [951 Stars](https://github.com/weiwill88/Local_Pdf_Chat_RAG/stargazers)、[179 Forks](https://github.com/weiwill88/Local_Pdf_Chat_RAG/forks) |
-| 近期 GitHub 流量 | 最近 14 天（截至 2026-08-30）有 105 位独立访客、78 位独立克隆者 |
-| 发布记录 | [已发布 2 个版本](https://github.com/weiwill88/Local_Pdf_Chat_RAG/releases)，当前版本为 [`v2.1.0`](https://github.com/weiwill88/Local_Pdf_Chat_RAG/releases/tag/v2.1.0) |
-| 维护频率 | [最近 90 天有 5 个提交](https://github.com/weiwill88/Local_Pdf_Chat_RAG/commits/main/)，最近一次 `main` 更新为 2026-08-16 |
-| 持续集成 | [最近一次 `main` CI 已通过](https://github.com/weiwill88/Local_Pdf_Chat_RAG/actions/workflows/ci.yml)，Pull Request 会执行源码编译和无密钥测试 |
-| Issue 与 PR 处理 | [38 个 Issue 已关闭](https://github.com/weiwill88/Local_Pdf_Chat_RAG/issues?q=is%3Aissue+state%3Aclosed)、[0 个待处理](https://github.com/weiwill88/Local_Pdf_Chat_RAG/issues?q=is%3Aissue+state%3Aopen)；[9 个 PR 已合并](https://github.com/weiwill88/Local_Pdf_Chat_RAG/pulls?q=is%3Apr+is%3Amerged)、[1 个正在 Review](https://github.com/weiwill88/Local_Pdf_Chat_RAG/pulls?q=is%3Apr+state%3Aopen) |
+- SQLite 持久化与增量索引
+- 中文 BGE embedding 和真正的 CrossEncoder 重排
+- 结构化 `[S1]` 引用，API 返回并在 UI 展示
+- 检索与答案级评测
+- 56 个无外部密钥的测试
 
-近期维护工作包括 Review 并合并[外部贡献者提交的检索修复](https://github.com/weiwill88/Local_Pdf_Chat_RAG/pull/55)、发布双语文档、增加无密钥测试和 GitHub Actions CI、采用 MIT License，以及建立非公开安全问题报告流程。
-
-Stars、Forks 和流量均为注明日期的 GitHub 快照。流量与克隆数据反映仓库关注度，不代表已经核验的安装用户或生产部署。当前状态请以仓库、[Actions](https://github.com/weiwill88/Local_Pdf_Chat_RAG/actions) 和 [Releases](https://github.com/weiwill88/Local_Pdf_Chat_RAG/releases) 页面为准。
+检索基线（8 个文件、140 个 chunk、46 条问题）：中文 BGE + BGE 重排达到
+**Recall@5 0.8982**、**MRR@5 0.8822**、**nDCG@5 0.8446**。答案级评测的 2 条问题冒烟结果为
+Token F1 0.1486、引用准确率/召回率 0.5000，详细设置见 [`eval/README.md`](eval/README.md)。
 
 ## 项目特点
 
+- **持久化知识库**：SQLite + 增量去重/替换，重启后无需重新上传。
 - **链路透明**：核心步骤按 RAG 执行顺序拆分，便于学习和调试。
 - **混合检索**：结合 FAISS 向量检索和 BM25 关键词检索。
-- **可选重排序**：支持 CrossEncoder 或基于模型的相关性评分。
+- **结构化引用**：`[S1]` 标注，附带文件名/chunk 或网页来源元数据。
+- **可量化质量**：检索和答案级评测脚本。
 - **多模型后端**：支持本地 Ollama、SiliconFlow 以及 OpenAI-compatible API。
 - **多种文档格式**：支持 PDF、TXT、Markdown、DOCX、XLS/XLSX 和 PPTX。
 - **双入口**：提供 Gradio Web UI 和 FastAPI REST API。
-- **可验证维护**：包含自动化测试、GitHub Actions CI、贡献指南和安全报告流程。
 
 ## RAG 流程
 
@@ -69,8 +65,8 @@ flowchart LR
 ### 1. 创建环境
 
 ```bash
-git clone https://github.com/weiwill88/Local_Pdf_Chat_RAG.git
-cd Local_Pdf_Chat_RAG
+git clone https://github.com/jackliu1376/docpilot.git
+cd docpilot
 
 python3.10 -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
@@ -110,7 +106,7 @@ python api_router.py
 
 - `GET /api/status`：运行状态、文档数量与后端配置状态；
 - `POST /api/upload`：上传并持久化文档；
-- `POST /api/ask`：基于持久化文档提问；
+- `POST /api/ask`：基于持久化文档提问，返回答案和结构化来源；
 - `GET /api/documents`：列出已持久化文档；
 - `DELETE /api/documents/{filename}`：删除文档；
 - `POST /api/clear`：清空知识库。
@@ -128,6 +124,7 @@ python api_router.py
 │   ├── vector_store.py        # FAISS 索引
 │   ├── bm25_index.py          # BM25 索引
 │   ├── knowledge_base.py     # SQLite 持久化与增量索引
+│   ├── answer.py              # 结构化来源与引用解析
 │   ├── retriever.py           # 混合与递归检索
 │   ├── reranker.py            # 结果重排序
 │   └── generator.py           # 上下文和回答生成
@@ -146,9 +143,10 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest
 当前测试覆盖：
 
 - 配置和默认后端选择；
-- TXT、Markdown 和不支持格式的文档加载行为；
-- BM25 与混合检索合并；
-- 未配置 API Key 时不发起外部请求并返回明确错误。
+- 文档加载和不支持格式行为；
+- BM25/混合检索与答案/引用指标；
+- SQLite 持久化、去重/替换和 API 文档接口；
+- 结构化答案来源与缺少 Key 时的回退。
 
 所有 Pull Request 都会通过 GitHub Actions 执行源码编译和测试。
 
@@ -188,6 +186,17 @@ UI 和 API 应使用相同的 `EMBED_MODEL_NAME`。模型不一致会触发自�
 评测脚本（`eval/run_retrieval_eval.py`）从 `eval/data/` 构建自己的内存索引，
 不使用持久化知识库。
 
+## 结构化引用
+
+`/api/ask` 返回 `answer`、`sources` 和 `metadata`。每个来源包含 `id`
+（`S1`、`S2`...）、`kind`（`local`/`web`）、`snippet`，以及本地文件名/chunk
+或网页 URL 等元数据。Prompt 要求模型在回答中用 `[S1]` 标注引用，Gradio UI 会在
+回答下方列出结构化来源。
+
+答案级评测脚本 `eval/run_answer_eval.py` 会统计 Token F1、引用准确率/召回率和
+拒答率。它需要本地 Ollama，建议先用 `--limit` 跑少量问题，详细说明见
+`eval/README.md`。
+
 ## 已知边界
 
 - PDF 采用文本层提取，不包含通用 OCR；扫描件需要先做 OCR。
@@ -205,8 +214,14 @@ UI 和 API 应使用相同的 `EMBED_MODEL_NAME`。模型不一致会触发自�
 ## 版本与维护
 
 - 变更记录：[`CHANGELOG.md`](CHANGELOG.md)
-- 已发布版本：[GitHub Releases](https://github.com/weiwill88/Local_Pdf_Chat_RAG/releases)
-- 当前维护者：[Will Wei](https://github.com/weiwill88)
+- 已发布版本：[GitHub Releases](https://github.com/jackliu1376/docpilot/releases)
+- 当前维护者：[jackliu1376](https://github.com/jackliu1376)
+
+## 来源说明
+
+本项目基于 Will Wei 的 MIT 许可项目
+[Local PDF Chat RAG](https://github.com/weiwill88/Local_Pdf_Chat_RAG)。
+SQLite 持久化、中文 BGE 检索、结构化引用和评测脚本是本仓库新增的内容。
 
 ## 许可证
 
