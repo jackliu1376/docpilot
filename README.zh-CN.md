@@ -25,8 +25,10 @@ DocPilot 是一个本地优先的 RAG 文档助手，面向希望理解并扩展
 - SQLite 持久化与增量索引
 - 中文 BGE embedding 和真正的 CrossEncoder 重排
 - 结构化 `[S1]` 引用，API 返回并在 UI 展示
-- 检索与答案级评测
-- 56 个无外部密钥的测试
+- DeepSeek / GLM 云端后端与 Tavily 联网搜索
+- 多轮追问改写为独立检索查询
+- 检索与答案级评测，以及 LLM correctness/faithfulness judge
+- 86 个无外部密钥的测试
 
 检索基线（8 个文件、140 个 chunk、46 条问题）：中文 BGE + BGE 重排达到
 **Recall@5 0.8982**、**MRR@5 0.8822**、**nDCG@5 0.8446**。10 条答案评测对比了本地
@@ -41,8 +43,10 @@ DocPilot 是一个本地优先的 RAG 文档助手，面向希望理解并扩展
 - **链路透明**：核心步骤按 RAG 执行顺序拆分，便于学习和调试。
 - **混合检索**：结合 FAISS 向量检索和 BM25 关键词检索。
 - **结构化引用**：`[S1]` 标注，附带文件名/chunk 或网页来源元数据。
+- **多轮对话**：用最近历史把追问改写为独立检索查询；历史只用于理解指代，不作为回答依据。
 - **可量化质量**：检索和答案级评测脚本。
 - **多模型后端**：支持本地 Ollama、DeepSeek、智谱 GLM 以及其他 OpenAI-compatible API。
+- **可选联网搜索**：默认 Tavily，同时保留旧版 SerpAPI 支持。
 - **多种文档格式**：支持 PDF、TXT、Markdown、DOCX、XLS/XLSX 和 PPTX。
 - **双入口**：提供 Gradio Web UI 和 FastAPI REST API。
 
@@ -85,9 +89,12 @@ cp example.env .env
 
 编辑 `.env`，至少完成下面一种配置：
 
-- 设置 `SILICONFLOW_API_KEY`；
-- 设置 `MAGICK_API_KEY`、服务地址和模型名称；
+- 设置 `DEEPSEEK_API_KEY` 使用 DeepSeek；
+- 设置 `GLM_API_KEY` 使用智谱 GLM；
 - 本地启动 Ollama，并拉取 `.env` 中配置的模型。
+
+`DEEPSEEK_API_URL`、`GLM_API_URL` 和对应的 `*_MODEL_NAME` 可以指向自建网关或
+任何兼容 OpenAI Chat Completions 的服务。
 
 密钥只保存在本地 `.env` 中。请勿提交真实密钥；示例配置中的 `Your_...` 占位符不会被识别为有效密钥。
 
@@ -109,7 +116,7 @@ python api_router.py
 
 - `GET /api/status`：运行状态、文档数量与后端配置状态；
 - `POST /api/upload`：上传并持久化文档；
-- `POST /api/ask`：基于持久化文档提问，返回答案和结构化来源；
+- `POST /api/ask`：基于持久化文档提问，可携带可选 `history`（`[{role, content}, ...]`），返回答案和结构化来源；
 - `GET /api/documents`：列出已持久化文档；
 - `DELETE /api/documents/{filename}`：删除文档；
 - `POST /api/clear`：清空知识库。
@@ -149,7 +156,9 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest
 - 文档加载和不支持格式行为；
 - BM25/混合检索与答案/引用指标；
 - SQLite 持久化、去重/替换和 API 文档接口；
-- 结构化答案来源与缺少 Key 时的回退。
+- 结构化答案来源、云端模型请求、Tavily 搜索与缺少 Key 时的回退；
+- 多轮历史归一化与追问查询改写；
+- LLM judge 的响应解析、交叉判分与 fallback 行为。
 
 所有 Pull Request 都会通过 GitHub Actions 执行源码编译和测试。
 
@@ -225,7 +234,7 @@ UI 和 API 应使用相同的 `EMBED_MODEL_NAME`。模型不一致会触发自�
 
 ## 来源说明
 
-本项目基于 Will Wei 的 MIT 许可项目
+本项目基于 Will Wei 及其贡献者的 MIT 许可项目
 [Local PDF Chat RAG](https://github.com/weiwill88/Local_Pdf_Chat_RAG)。
 SQLite 持久化、中文 BGE 检索、结构化引用和评测脚本是本仓库新增的内容。
 

@@ -83,6 +83,8 @@ SHA-256 file hash -> dedup/replace decision
 
 Both interfaces call `core.generator.answer_question()`, which returns an `AnswerResult(answer, sources, metadata)`. `query_answer()` is a string-only compatibility wrapper; `stream_answer()` remains string-based.
 
+`answer_question()` accepts optional `history` (Gradio messages, `(user, assistant)` turns, or API `{role, content}` dicts). It normalizes the last `HISTORY_MAX_TURNS` turns, calls `rewrite_followup_query()` to turn a follow-up into a standalone retrieval query, and passes both the original question and bounded history to the prompt. The prompt explicitly says history is only for resolving references and must not be used as evidence. `/api/ask` accepts the same history as a list of `{role, content}` objects; the Gradio UI forwards its chat history automatically.
+
 1. `recursive_retrieval()` (`core/retriever.py`) — up to `MAX_RETRIEVAL_ITERATIONS` rounds. Each round optionally appends Tavily (default) or SerpAPI web snippets (deduplicated, not indexed), queries FAISS, queries BM25, merges with `hybrid_merge()` (weighted rank scores: `alpha` semantic + `1-alpha` BM25), reranks, then asks the LLM to rewrite the query. Returns parallel lists `(contexts, doc_ids, metadata)`.
 2. `_build_context()` — labels context blocks `[S1]`, `[S2]`, ... and returns typed `Source` objects (id, kind, snippet, filename/chunk or web URL metadata).
 3. `detect_conflicts()` (`features/conflict_detector.py`) and a keyword check for time-sensitive questions.
@@ -93,7 +95,7 @@ Cloud API helpers return error text instead of raising; callers generally surfac
 
 ## Configuration and model selection
 
-`config.py` loads `.env`, falling back to `example.env` with a warning; it sets `HF_ENDPOINT=https://hf-mirror.com`. Keys beginning with `Your` are placeholders (`is_configured_api_key`). `DEFAULT_MODEL_CHOICE` is computed **at import time** with priority DeepSeek → GLM → local Ollama probe (`localhost:11434`, 3s timeout) → DeepSeek fallback. Persistent data lives at `DATA_DIR`/`DB_PATH` (`RAG_DATA_DIR`, default `data/`).
+`config.py` loads `.env`, falling back to `example.env` with a warning; it sets `HF_ENDPOINT=https://hf-mirror.com` via `os.environ.setdefault`, so an existing user value wins. Keys beginning with `Your` are placeholders (`is_configured_api_key`). `DEFAULT_MODEL_CHOICE` is computed **at import time** with priority DeepSeek → GLM → local Ollama probe (`localhost:11434`, 3s timeout) → DeepSeek fallback. Persistent data lives at `DATA_DIR`/`DB_PATH` (`RAG_DATA_DIR`, default `data/`).
 
 RAG hyperparameters are module constants, not environment variables: `CHUNK_SIZE=400`, `CHUNK_OVERLAP=40`, `HYBRID_ALPHA=0.7`, `RETRIEVAL_TOP_K=10`, `RERANK_TOP_K=5`, `MAX_RETRIEVAL_ITERATIONS=3`. `EMBED_MODEL_NAME` selects the embedding model and `EMBED_QUERY_PREFIX` optionally prepends a BGE query instruction. `DEEPSEEK_API_URL`/`DEEPSEEK_MODEL_NAME` and `GLM_API_URL`/`GLM_MODEL_NAME` configure the two cloud backends. `RERANK_METHOD` (`cross_encoder` default, or `llm`) selects `core/reranker.py` behavior; `RERANK_MODEL_NAME` selects the CrossEncoder (default `BAAI/bge-reranker-base`). Ollama generation is bounded by `OLLAMA_MAX_OUTPUT_TOKENS` (1024), `OLLAMA_QUERY_MAX_TOKENS` (64), and `OLLAMA_TIMEOUT_SECONDS` (300); the LLM reranker is capped at 8 output tokens.
 

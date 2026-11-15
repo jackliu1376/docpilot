@@ -100,6 +100,77 @@ def test_upload_failure_does_not_leak_temp_path(monkeypatch):
     assert "文档处理失败" in response.json()["detail"]
 
 
+def test_cors_disables_credentials_with_wildcard_origin():
+    middleware = next(
+        item
+        for item in api_router.app.user_middleware
+        if item.cls.__name__ == "CORSMiddleware"
+    )
+
+    assert middleware.kwargs["allow_origins"] == ["*"]
+    assert middleware.kwargs["allow_credentials"] is False
+
+
+def test_ask_rejects_blank_question(monkeypatch):
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("blank question must not reach the pipeline")
+
+    monkeypatch.setattr(api_router, "answer_question", fail_if_called)
+
+    with TestClient(api_router.app) as client:
+        response = client.post(
+            "/api/ask",
+            json={"question": "   ", "model_choice": "ollama"},
+        )
+
+    assert response.status_code == 400
+    assert "问题不能为空" in response.json()["detail"]
+
+
+def test_ask_rejects_unknown_model(monkeypatch):
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("unknown model must not reach the pipeline")
+
+    monkeypatch.setattr(api_router, "answer_question", fail_if_called)
+
+    with TestClient(api_router.app) as client:
+        response = client.post(
+            "/api/ask",
+            json={"question": "q", "model_choice": "unknown"},
+        )
+
+    assert response.status_code == 400
+    assert "不支持的模型" in response.json()["detail"]
+
+
+def test_ask_passes_history_to_answer_question(monkeypatch):
+    captured = {}
+    result = AnswerResult(answer="答案", sources=[], metadata={})
+
+    def fake_answer(*args, **kwargs):
+        captured.update(kwargs)
+        return result
+
+    monkeypatch.setattr(api_router, "answer_question", fake_answer)
+
+    history = [
+        {"role": "user", "content": "量子计算机是什么？"},
+        {"role": "assistant", "content": "量子计算机利用量子力学。"},
+    ]
+    with TestClient(api_router.app) as client:
+        response = client.post(
+            "/api/ask",
+            json={
+                "question": "它的寿命呢？",
+                "model_choice": "ollama",
+                "history": history,
+            },
+        )
+
+    assert response.status_code == 200
+    assert captured["history"] == history
+
+
 def test_ask_returns_structured_sources(monkeypatch):
     result = AnswerResult(
         answer="答案 [S1]",

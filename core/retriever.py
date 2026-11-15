@@ -8,7 +8,13 @@
 """
 
 import logging
-from config import HYBRID_ALPHA, RETRIEVAL_TOP_K, RERANK_TOP_K, MAX_RETRIEVAL_ITERATIONS
+from config import (
+    HYBRID_ALPHA,
+    RETRIEVAL_TOP_K,
+    RERANK_TOP_K,
+    MAX_RETRIEVAL_ITERATIONS,
+    DEFAULT_MODEL_CHOICE,
+)
 from core.vector_store import vector_store
 from core.bm25_index import bm25_manager
 from core.embeddings import encode_query
@@ -76,7 +82,8 @@ def hybrid_merge(semantic_results, bm25_results, alpha=None):
     return sorted(merged_dict.items(), key=lambda x: x[1]['score'], reverse=True)
 
 
-def recursive_retrieval(initial_query, max_iterations=None, enable_web_search=False, model_choice="siliconflow"):
+def recursive_retrieval(initial_query, max_iterations=None, enable_web_search=False,
+                        model_choice=DEFAULT_MODEL_CHOICE):
     """
     递归检索与查询优化
 

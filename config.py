@@ -120,7 +120,7 @@ OLLAMA_TIMEOUT_SECONDS = int(os.getenv("OLLAMA_TIMEOUT_SECONDS", "300"))
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 第五步：运行时环境配置
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+os.environ.setdefault('HF_ENDPOINT', 'https://hf-mirror.com')
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 os.environ['NO_PROXY'] = 'localhost,127.0.0.1'
 requests.adapters.DEFAULT_RETRIES = 3

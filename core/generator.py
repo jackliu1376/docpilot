@@ -17,6 +17,7 @@ from config import (
     MAGICK_API_KEY, MAGICK_API_URL, MAGICK_MODEL_NAME,
     DEEPSEEK_API_KEY, DEEPSEEK_API_URL, DEEPSEEK_MODEL_NAME,
     GLM_API_KEY, GLM_API_URL, GLM_MODEL_NAME,
+    DEFAULT_MODEL_CHOICE,
     OLLAMA_MAX_OUTPUT_TOKENS, OLLAMA_QUERY_MAX_TOKENS, OLLAMA_TIMEOUT_SECONDS
 )
 from utils.network import get_session
@@ -25,6 +26,128 @@ from core.retriever import recursive_retrieval
 from core.vector_store import vector_store
 from features.conflict_detector import detect_conflicts, evaluate_source_credibility
 from features.thinking_chain import process_thinking_content
+
+# Multi-turn context is only used to resolve references, never as evidence.
+HISTORY_MAX_TURNS = 3
+HISTORY_MAX_CHARS = 1200
+FOLLOWUP_MAX_STANDALONE_CHARS = 20
+FOLLOWUP_MARKERS = (
+    "它", "他", "她", "这个", "那个", "这些", "那些", "上述", "前面",
+    "刚才", "该", "其", "这", "那", "还", "再", "呢",
+)
+
+
+def should_rewrite_followup(question):
+    """Only rewrite short or referential questions; skip complete long ones."""
+    text = (question or "").strip()
+    if not text:
+        return False
+    return len(text) <= FOLLOWUP_MAX_STANDALONE_CHARS or any(
+        marker in text for marker in FOLLOWUP_MARKERS
+    )
+
+
+def _history_content_text(content):
+    """Flatten Gradio's string or multimodal content blocks into text."""
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, dict):
+                parts.append(str(item.get("text", "")))
+            else:
+                parts.append(str(item))
+        return " ".join(parts).strip()
+    return str(content or "").strip()
+
+
+def normalize_history(history):
+    """Normalize Gradio/API history into role/content messages."""
+    if not history:
+        return []
+
+    normalized = []
+    for item in history:
+        if isinstance(item, dict):
+            role = item.get("role")
+            content = _history_content_text(item.get("content"))
+            if role in {"user", "assistant"} and content:
+                normalized.append({"role": role, "content": content})
+            continue
+
+        if isinstance(item, (list, tuple)):
+            first = item[0] if item else None
+            if (
+                len(item) == 2
+                and isinstance(first, str)
+                and first in {"user", "assistant"}
+            ):
+                content = _history_content_text(item[1])
+                if content:
+                    normalized.append({"role": first, "content": content})
+            elif len(item) >= 2:
+                # Older Gradio history format: (user_message, assistant_message)
+                user_content = _history_content_text(item[0])
+                assistant_content = _history_content_text(item[1])
+                if user_content:
+                    normalized.append({"role": "user", "content": user_content})
+                if assistant_content:
+                    normalized.append(
+                        {"role": "assistant", "content": assistant_content}
+                    )
+    return normalized
+
+
+def format_history(history, max_turns=HISTORY_MAX_TURNS, max_chars=HISTORY_MAX_CHARS):
+    """Format the most recent turns for a prompt, bounded by size."""
+    messages = normalize_history(history)[-(max_turns * 2):]
+    if not messages:
+        return ""
+
+    lines = [
+        f"{'用户' if message['role'] == 'user' else '助手'}：{message['content']}"
+        for message in messages
+    ]
+    text = "\n".join(lines)
+    return text[-max_chars:] if len(text) > max_chars else text
+
+
+def rewrite_followup_query(question, history, model_choice, call_fn=None):
+    """Rewrite a follow-up question into a standalone retrieval query."""
+    history_text = format_history(history)
+    if not history_text or not should_rewrite_followup(question):
+        return question
+
+    if call_fn is None:
+        call_fn = call_llm_simple
+
+    prompt = f"""你是查询改写助手。根据对话历史，把用户当前问题改写成一个可以独立检索的完整问题。
+要求：
+1. 只补齐指代和省略的信息，不要回答问题，也不要添加历史中没有的事实。
+2. 如果当前问题已经完整，原样返回。
+3. 只输出改写后的问题，不要解释。
+
+对话历史：
+{history_text}
+
+当前问题：{question}
+改写后的问题："""
+
+    try:
+        rewritten = str(
+            call_fn(prompt, model_choice, max_tokens=64) or ""
+        ).strip()
+        rewritten = re.sub(
+            r"^(改写后的问题|改写结果|查询|新查询)[:：]\s*", "", rewritten
+        )
+        rewritten = rewritten.strip("\"'“”‘’").strip()
+        if not rewritten or len(rewritten) > 120:
+            return question
+        if rewritten.startswith(("错误", "调用", "发生未知错误")):
+            return question
+        return rewritten
+    except Exception as exc:
+        logging.warning(f"多轮查询改写失败，回退原问题: {exc}")
+        return question
 
 
 def _normalize_chat_completions_url(api_url):
@@ -175,10 +298,15 @@ def call_cloud_api(prompt, model_choice="deepseek", temperature=0.7, max_tokens=
     raise ValueError(f"未知云端模型服务: {model_choice}")
 
 
-def call_llm_simple(prompt, model_choice="siliconflow"):
-    """简单的 LLM 调用（用于递归检索中的查询改写判断）"""
+def call_llm_simple(prompt, model_choice=DEFAULT_MODEL_CHOICE, max_tokens=None):
+    """简单的 LLM 调用（用于查询改写和递归检索判断）"""
+    if max_tokens is None:
+        max_tokens = OLLAMA_QUERY_MAX_TOKENS
+
     if model_choice in ("siliconflow", "magick", "deepseek", "glm"):
-        result = call_cloud_api(prompt, model_choice)
+        result = call_cloud_api(
+            prompt, model_choice, temperature=0.0, max_tokens=max_tokens
+        )
         result = result.strip() if isinstance(result, str) else result[0].strip()
         if "<think>" in result:
             result = result.split("<think>")[0].strip()
@@ -193,7 +321,7 @@ def call_llm_simple(prompt, model_choice="siliconflow"):
                 # Query rewriting must not spend its small token budget on
                 # a thinking model's reasoning phase.
                 "think": False,
-                "options": {"num_predict": OLLAMA_QUERY_MAX_TOKENS},
+                "options": {"num_predict": max_tokens},
             },
             timeout=OLLAMA_TIMEOUT_SECONDS
         )
@@ -204,10 +332,18 @@ def call_llm_simple(prompt, model_choice="siliconflow"):
 
 
 def _build_prompt(question, context, enable_web_search, knowledge_base_exists,
-                  time_sensitive, conflict_detected):
+                  time_sensitive, conflict_detected, history_text=None):
     """构建提示词"""
-    prompt_template = """作为一个专业的问答助手，你需要基于以下{context_type}回答用户问题。
+    history_block = ""
+    if history_text:
+        history_block = (
+            "\n对话历史（仅用于理解当前问题中的指代和省略，不能作为回答依据；"
+            "回答仍必须引用本次参考内容）：\n"
+            f"{history_text}\n"
+        )
 
+    prompt_template = """作为一个专业的问答助手，你需要基于以下{context_type}回答用户问题。
+{history_block}
 提供的参考内容：
 {context}
 
@@ -224,13 +360,14 @@ def _build_prompt(question, context, enable_web_search, knowledge_base_exists,
 8. 只输出最终回答，不要重复参考内容、问题或示例结构。
 9. 在回答末尾列出引用来源{time_instruction}{conflict_instruction}
 
-引用格式示例：可能原因包括油品问题和缸压不足 [S1]。
+引用格式：在事实性结论后标注 [S1] 等编号；示例仅示意格式，不要复用示例中的实体、数值或结论。
 
 请现在开始回答："""
 
     return prompt_template.format(
         context_type="本地文档和网络搜索结果" if enable_web_search and knowledge_base_exists else (
             "网络搜索结果" if enable_web_search else "本地文档"),
+        history_block=history_block,
         context=context if context else (
             "网络搜索结果将用于回答。" if enable_web_search and not knowledge_base_exists else "知识库为空或未找到相关内容。"),
         question=question,
@@ -285,9 +422,19 @@ def _build_context(all_contexts, all_doc_ids, all_metadata, enable_web_search):
     return "\n\n".join(context_parts), sources
 
 
-def answer_question(question, enable_web_search=False, model_choice="siliconflow", progress=None):
+def answer_question(question, enable_web_search=False, model_choice=DEFAULT_MODEL_CHOICE,
+                    progress=None, history=None):
     """问答处理主流程，返回结构化答案和来源。"""
-    metadata = {"enable_web_search": enable_web_search, "model": model_choice}
+    normalized_history = normalize_history(history)
+    history_text = format_history(normalized_history)
+    metadata = {
+        "enable_web_search": enable_web_search,
+        "model": model_choice,
+        "retrieval_query": question,
+        "history_turns": sum(
+            1 for message in normalized_history if message["role"] == "user"
+        ),
+    }
     try:
         knowledge_base_exists = vector_store.is_ready
         if not knowledge_base_exists and not enable_web_search:
@@ -297,11 +444,18 @@ def answer_question(question, enable_web_search=False, model_choice="siliconflow
                 metadata=metadata,
             )
 
+        retrieval_query = rewrite_followup_query(
+            question, normalized_history, model_choice
+        )
+        metadata["retrieval_query"] = retrieval_query
+
         if progress:
             progress(0.3, desc="执行递归检索...")
 
         all_contexts, all_doc_ids, all_metadata = recursive_retrieval(
-            initial_query=question, enable_web_search=enable_web_search, model_choice=model_choice
+            initial_query=retrieval_query,
+            enable_web_search=enable_web_search,
+            model_choice=model_choice,
         )
 
         context, sources = _build_context(all_contexts, all_doc_ids, all_metadata, enable_web_search)
@@ -310,8 +464,10 @@ def answer_question(question, enable_web_search=False, model_choice="siliconflow
         )
         time_sensitive = any(w in question for w in ["最新", "今年", "当前", "最近", "刚刚"])
 
-        prompt = _build_prompt(question, context, enable_web_search,
-                               knowledge_base_exists, time_sensitive, conflict_detected)
+        prompt = _build_prompt(
+            question, context, enable_web_search, knowledge_base_exists,
+            time_sensitive, conflict_detected, history_text=history_text
+        )
 
         if progress:
             progress(0.8, desc="生成回答...")
@@ -356,26 +512,36 @@ def answer_question(question, enable_web_search=False, model_choice="siliconflow
         return AnswerResult(answer=f"系统错误: {str(e)}", sources=[], metadata=metadata)
 
 
-def query_answer(question, enable_web_search=False, model_choice="siliconflow", progress=None):
+def query_answer(question, enable_web_search=False, model_choice=DEFAULT_MODEL_CHOICE,
+                 progress=None, history=None):
     """兼容旧调用方：只返回回答文本。"""
     return answer_question(
-        question, enable_web_search, model_choice, progress
+        question, enable_web_search, model_choice, progress, history
     ).answer
 
 
-def stream_answer(question, enable_web_search=False, model_choice="siliconflow", progress=None):
+def stream_answer(question, enable_web_search=False, model_choice=DEFAULT_MODEL_CHOICE,
+                  progress=None, history=None):
     """问答处理主流程（流式，用于 Gradio generator 模式）"""
+    normalized_history = normalize_history(history)
+    history_text = format_history(normalized_history)
     try:
         knowledge_base_exists = vector_store.is_ready
         if not knowledge_base_exists and not enable_web_search:
             yield "⚠️ 知识库为空，请先上传文档。", "遇到错误"
             return
 
+        retrieval_query = rewrite_followup_query(
+            question, normalized_history, model_choice
+        )
+
         if progress:
             progress(0.3, desc="执行递归检索...")
 
         all_contexts, all_doc_ids, all_metadata = recursive_retrieval(
-            initial_query=question, enable_web_search=enable_web_search, model_choice=model_choice
+            initial_query=retrieval_query,
+            enable_web_search=enable_web_search,
+            model_choice=model_choice,
         )
 
         context, sources = _build_context(all_contexts, all_doc_ids, all_metadata, enable_web_search)
@@ -384,8 +550,10 @@ def stream_answer(question, enable_web_search=False, model_choice="siliconflow",
         )
         time_sensitive = any(w in question for w in ["最新", "今年", "当前", "最近", "刚刚"])
 
-        prompt = _build_prompt(question, context, enable_web_search,
-                               knowledge_base_exists, time_sensitive, conflict_detected)
+        prompt = _build_prompt(
+            question, context, enable_web_search, knowledge_base_exists,
+            time_sensitive, conflict_detected, history_text=history_text
+        )
 
         if model_choice in ("siliconflow", "magick", "deepseek", "glm"):
             full_answer = call_cloud_api(prompt, model_choice, temperature=0.2, max_tokens=1536)

@@ -25,8 +25,10 @@ This repository extends the original educational RAG demo with:
 - SQLite-backed persistence and incremental indexing
 - Chinese BGE embeddings and a real CrossEncoder reranker
 - Structured `[S1]` citations returned by the API and shown in the UI
-- Retrieval and answer-level evaluation harnesses
-- 56 credential-free tests
+- DeepSeek and GLM cloud backends plus Tavily web search
+- Multi-turn follow-ups rewritten into standalone retrieval queries
+- Retrieval and answer-level evaluation harnesses, including an LLM correctness/faithfulness judge
+- 86 credential-free tests
 
 Retrieval baseline (8 files, 140 chunks, 46 questions): Chinese BGE + BGE reranker reaches
 **Recall@5 0.8982**, **MRR@5 0.8822**, and **nDCG@5 0.8446**. The 10-question answer evaluation
@@ -41,8 +43,10 @@ on 7/10 despite winning lexical F1. See [`eval/README.md`](eval/README.md) for t
 - **Inspectable pipeline**: core modules follow the order in which a RAG request is processed.
 - **Hybrid retrieval**: combines FAISS dense retrieval with BM25 keyword retrieval.
 - **Structured citations**: `[S1]` labels with filename/chunk and web-source metadata.
+- **Multi-turn conversation**: recent history rewrites follow-up questions into standalone retrieval queries; history is not treated as evidence.
 - **Measurable quality**: retrieval and answer-level evaluation harnesses.
 - **Multiple model backends**: local Ollama, DeepSeek, Zhipu GLM, and other OpenAI-compatible APIs.
+- **Optional web search**: Tavily by default, with legacy SerpAPI support.
 - **Document support**: PDF, TXT, Markdown, DOCX, XLS/XLSX, and PPTX.
 - **Two interfaces**: a Gradio web application and a FastAPI REST API.
 
@@ -85,9 +89,13 @@ cp example.env .env
 
 Edit `.env` and choose at least one option:
 
-- set `SILICONFLOW_API_KEY`;
-- set `MAGICK_API_KEY`, its endpoint, and model name; or
-- start Ollama locally and pull the model configured in `.env`.
+- set `DEEPSEEK_API_KEY` to use DeepSeek;
+- set `GLM_API_KEY` to use Zhipu GLM;
+- or start Ollama locally and pull the model configured in `.env`.
+
+`DEEPSEEK_API_URL`, `GLM_API_URL`, and the corresponding `*_MODEL_NAME` values
+can point at a self-hosted or gateway endpoint that implements the
+OpenAI-compatible Chat Completions API.
 
 Keep real credentials in your local `.env` file. Values beginning with `Your_` are treated as placeholders and are not valid credentials.
 
@@ -109,7 +117,7 @@ Main endpoints:
 
 - `GET /api/status`: runtime, document-count, and provider configuration status;
 - `POST /api/upload`: upload and persist a document;
-- `POST /api/ask`: ask a question; returns the answer and structured sources;
+- `POST /api/ask`: ask a question with optional `history` (`[{role, content}, ...]`); returns the answer and structured sources;
 - `GET /api/documents`: list persisted documents;
 - `DELETE /api/documents/{filename}`: remove a document;
 - `POST /api/clear`: clear the knowledge base.
@@ -149,7 +157,9 @@ The current suite covers:
 - document loading and unsupported-file behavior;
 - BM25/hybrid retrieval and answer/citation metrics;
 - SQLite persistence, dedup/replace, and API document endpoints;
-- structured answer sources and missing-key fallback.
+- structured answer sources, cloud provider requests, Tavily search, and missing-key fallback;
+- multi-turn history normalization and follow-up query rewriting;
+- LLM judge response parsing, cross-judging, and fallback behavior.
 
 GitHub Actions compiles the Python sources and runs the test suite for every pull request.
 
@@ -230,7 +240,7 @@ Do not open a public issue for a vulnerability. Follow [`SECURITY.md`](SECURITY.
 ## Attribution
 
 This project started from the MIT-licensed
-[Local PDF Chat RAG](https://github.com/weiwill88/Local_Pdf_Chat_RAG) by Will Wei.
+[Local PDF Chat RAG](https://github.com/weiwill88/Local_Pdf_Chat_RAG) by Will Wei and contributors.
 SQLite persistence, Chinese BGE retrieval, structured citations, and the evaluation
 harness are additions in this repository.
 

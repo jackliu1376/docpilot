@@ -48,9 +48,132 @@ def test_build_prompt_instructs_concise_citations_and_refusal():
     assert "先给出 1-3 句结论" in prompt
     assert "根据提供的资料无法确认" in prompt
     assert "[S1]" in prompt
-    assert "示例" in prompt
+    assert "不要复用示例" in prompt
+    assert "油品问题" not in prompt
+    assert "缸压不足" not in prompt
     assert "只输出最终回答" in prompt
     assert "关键数值" in prompt
+
+
+def test_build_prompt_includes_history_as_non_evidence():
+    prompt = generator._build_prompt(
+        "它的寿命呢？",
+        "参考内容",
+        False,
+        True,
+        False,
+        False,
+        history_text="用户：量子计算机是什么？\n助手：量子计算机利用量子力学。",
+    )
+
+    assert "对话历史" in prompt
+    assert "不能作为回答依据" in prompt
+    assert "它的寿命呢？" in prompt
+    assert "量子计算机是什么" in prompt
+
+
+def test_rewrite_followup_query_uses_history():
+    captured = {}
+
+    def fake_call(prompt, model_choice, max_tokens=64):
+        captured["prompt"] = prompt
+        captured["model_choice"] = model_choice
+        captured["max_tokens"] = max_tokens
+        return "量子计算机的使用寿命"
+
+    rewritten = generator.rewrite_followup_query(
+        "它的寿命呢？",
+        [
+            {"role": "user", "content": "量子计算机是什么？"},
+            {"role": "assistant", "content": "量子计算机利用量子力学。"},
+        ],
+        "deepseek",
+        call_fn=fake_call,
+    )
+
+    assert rewritten == "量子计算机的使用寿命"
+    assert captured["model_choice"] == "deepseek"
+    assert captured["max_tokens"] == 64
+    assert "量子计算机是什么" in captured["prompt"]
+    assert "它的寿命呢？" in captured["prompt"]
+
+
+def test_rewrite_followup_query_falls_back_without_history_or_valid_output():
+    def fail_call(*args, **kwargs):
+        raise AssertionError("no LLM call without history")
+
+    assert generator.rewrite_followup_query(
+        "量子计算机是什么？", [], "deepseek", call_fn=fail_call
+    ) == "量子计算机是什么？"
+
+    assert generator.rewrite_followup_query(
+        "它的寿命呢？",
+        [{"role": "user", "content": "量子计算机是什么？"}],
+        "deepseek",
+        call_fn=lambda *args, **kwargs: "",
+    ) == "它的寿命呢？"
+
+
+def test_rewrite_followup_query_skips_complete_standalone_question():
+    calls = []
+
+    def fail_call(*args, **kwargs):
+        calls.append(1)
+        raise AssertionError("standalone question should not be rewritten")
+
+    question = "请详细说明量子计算机的使用寿命、主要风险和适用场景"
+    assert generator.rewrite_followup_query(
+        question,
+        [{"role": "user", "content": "量子计算机是什么？"}],
+        "deepseek",
+        call_fn=fail_call,
+    ) == question
+    assert calls == []
+
+
+def test_answer_question_passes_rewritten_query_to_retrieval(monkeypatch):
+    class FakeResponse:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"response": "答案 [S1]"}
+
+    class FakeSession:
+        def post(self, url, **kwargs):
+            return FakeResponse()
+
+    captured = {}
+
+    def fake_retrieval(**kwargs):
+        captured.update(kwargs)
+        return (
+            ["chunk text"],
+            ["doc:1"],
+            [{"source": "a.pdf", "chunk_index": 0}],
+        )
+
+    monkeypatch.setattr(generator, "get_session", lambda: FakeSession())
+    monkeypatch.setattr(generator, "vector_store", SimpleNamespace(is_ready=True))
+    monkeypatch.setattr(generator, "recursive_retrieval", fake_retrieval)
+    monkeypatch.setattr(
+        generator,
+        "rewrite_followup_query",
+        lambda question, history, model_choice: "量子计算机的使用寿命",
+    )
+
+    result = generator.answer_question(
+        "它的寿命呢？",
+        model_choice="ollama",
+        history=[
+            {"role": "user", "content": "量子计算机是什么？"},
+            {"role": "assistant", "content": "量子计算机利用量子力学。"},
+        ],
+    )
+
+    assert captured["initial_query"] == "量子计算机的使用寿命"
+    assert result.metadata["retrieval_query"] == "量子计算机的使用寿命"
+    assert result.metadata["history_turns"] == 1
 
 
 def test_answer_question_normalizes_citations(monkeypatch):

@@ -28,7 +28,7 @@ from config import (
 # 导入核心模块
 from core.knowledge_base import knowledge_base
 from core.vector_store import vector_store
-from core.generator import answer_question, call_deepseek_api, call_glm_api
+from core.generator import answer_question
 
 # 导入工具
 from utils.network import is_port_available
@@ -348,7 +348,9 @@ with gr.Blocks(title="本地RAG问答系统") as demo:
             return history, "", api_text
 
         try:
-            result = answer_question(question, enable_web_search, model_choice_val)
+            result = answer_question(
+                question, enable_web_search, model_choice_val, history=history
+            )
             answer = result.answer
             if result.sources:
                 lines = ["", "---", "**来源**"]
@@ -440,32 +442,14 @@ with gr.Blocks(title="本地RAG问答系统") as demo:
 
 
 def check_environment():
-    """环境依赖检查"""
+    """环境依赖检查（启动时不做云端真实调用，避免网关故障阻塞 UI）"""
     if is_configured_api_key(DEEPSEEK_API_KEY):
-        print("✅ DeepSeek API 密钥已配置")
-        try:
-            result = call_deepseek_api("你好，请回复'连接成功'", temperature=0.1, max_tokens=50)
-            if isinstance(result, str) and ("连接成功" in result or "你好" in result):
-                print("✅ DeepSeek API 连接测试成功")
-            else:
-                print("⚠️ DeepSeek API 响应异常，但继续运行")
-            return True
-        except Exception as e:
-            print(f"⚠️ DeepSeek API 测试失败: {e}")
-            return True
+        print("✅ DeepSeek API 密钥已配置（首次提问时验证连通性）")
+        return True
 
     if is_configured_api_key(GLM_API_KEY):
-        print("✅ GLM API 密钥已配置")
-        try:
-            result = call_glm_api("你好，请回复'连接成功'", temperature=0.1, max_tokens=50)
-            if isinstance(result, str) and ("连接成功" in result or "你好" in result):
-                print("✅ GLM API 连接测试成功")
-            else:
-                print("⚠️ GLM API 响应异常，但继续运行")
-            return True
-        except Exception as e:
-            print(f"⚠️ GLM API 测试失败: {e}")
-            return True
+        print("✅ GLM API 密钥已配置（首次提问时验证连通性）")
+        return True
 
     print("⚠️ 未配置云端 API 密钥，将尝试使用本地 Ollama")
     try:

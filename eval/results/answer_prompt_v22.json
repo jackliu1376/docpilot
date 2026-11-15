@@ -1,0 +1,343 @@
+{
+  "corpus_files": [
+    "挖掘机维修案例(样例）.pdf",
+    "eval/data/1.pptx",
+    "eval/data/3系统总线.pptx",
+    "eval/data/6计算机的运算方法1.pptx",
+    "eval/data/7指令系统.pptx",
+    "eval/data/8CPU的结构和功能.pptx",
+    "eval/data/gzx9控制单元的功能.pptx",
+    "eval/data/数据库课程设计题目汇总-2024.pdf"
+  ],
+  "dataset": "eval/golden_qa.jsonl",
+  "model_choice": "ollama",
+  "judge_requested": null,
+  "judge_model": null,
+  "judge_fallback_model": null,
+  "limit": 10,
+  "metrics": {
+    "token_f1": 0.5176533583792657,
+    "citation_precision": 0.8,
+    "citation_recall": 0.7,
+    "refusal_rate": 0.0,
+    "retrieval_hit_rate": 1.0,
+    "citation_adherence_rate": 1.0,
+    "mean_answer_chars": 41.8
+  },
+  "per_query": [
+    {
+      "id": "blue-smoke-causes",
+      "question": "发动机冒蓝烟的可能故障原因有哪些？",
+      "token_f1": 0.7499999999999999,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "cited_ids": [
+        "S1"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005",
+        "doc_000_chunk_006",
+        "doc_007_chunk_006",
+        "doc_007_chunk_007",
+        "doc_007_chunk_018",
+        "doc_007_chunk_029"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 52,
+      "refused": false,
+      "answer_preview": "发动机冒蓝烟的可能故障原因有：\n- 油品有问题  \n- 缸压不够  \n- 喷油器有问题  \n- 泵有问题"
+    },
+    {
+      "id": "blue-smoke-repair",
+      "question": "发动机冒蓝烟最终更换了什么部件？",
+      "token_f1": 0.6666666666666666,
+      "citation_precision": 1.0,
+      "citation_recall": 0.5,
+      "cited_ids": [
+        "S1"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005",
+        "doc_000_chunk_006"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001"
+      ],
+      "relevant_chunks": 2,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 9,
+      "refused": false,
+      "answer_preview": "最终更换了喷油器。"
+    },
+    {
+      "id": "blue-smoke-cylinder",
+      "question": "发动机冒蓝烟案例中，断缸测试发现哪一缸缺缸？",
+      "token_f1": 0.42857142857142855,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "cited_ids": [
+        "S1"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_002",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005",
+        "doc_000_chunk_006"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 21,
+      "refused": false,
+      "answer_preview": "发动机冒蓝烟案例中，断缸测试发现4缸缺缸。"
+    },
+    {
+      "id": "blue-smoke-analysis",
+      "question": "发动机冒蓝烟的故障现象分析是什么？",
+      "token_f1": 0.6818181818181818,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "cited_ids": [
+        "S1"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005",
+        "doc_000_chunk_006",
+        "doc_007_chunk_006",
+        "doc_007_chunk_007",
+        "doc_007_chunk_018",
+        "doc_007_chunk_029"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 53,
+      "refused": false,
+      "answer_preview": "发动机冒蓝烟的故障现象分析是：发动机冒蓝烟，燃油味道重，燃油不充分燃烧，或者缸压问题，或者喷油器雾化不良。"
+    },
+    {
+      "id": "blue-smoke-prevention",
+      "question": "发动机冒蓝烟案例的预防再发建议是什么？",
+      "token_f1": 0.47058823529411764,
+      "citation_precision": 0.0,
+      "citation_recall": 0.0,
+      "cited_ids": [
+        "S4"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_000"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005",
+        "doc_000_chunk_006"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_001"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 26,
+      "refused": false,
+      "answer_preview": "发动机冒蓝烟案例的预防再发建议是：平时做好油品使用。"
+    },
+    {
+      "id": "idle-causes",
+      "question": "挖机60E怠速抖动大的可能原因有哪些？",
+      "token_f1": 0.5405405405405406,
+      "citation_precision": 1.0,
+      "citation_recall": 0.5,
+      "cited_ids": [
+        "S1"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_001"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_002",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_001",
+        "doc_000_chunk_002"
+      ],
+      "relevant_chunks": 2,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 54,
+      "refused": false,
+      "answer_preview": "可能的原因包括：1、发动机固定螺栓松动；2、发动机某一缸断缸了；3、喷油器损坏了；4、发动机脚垫有磨损严重。"
+    },
+    {
+      "id": "idle-repair",
+      "question": "挖机60E怠速抖动大最终是如何解决的？",
+      "token_f1": 0.2978723404255319,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "cited_ids": [
+        "S2"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_002"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_001",
+        "doc_000_chunk_002",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005",
+        "doc_000_chunk_006",
+        "doc_007_chunk_006",
+        "doc_007_chunk_007",
+        "doc_007_chunk_018",
+        "doc_007_chunk_029"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_002"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 74,
+      "refused": false,
+      "answer_preview": "挖机60E怠速抖动大最终是通过更换发动机脚垫来解决的。服务人员发现发动机脚垫有不同程度的磨损，更换了4个新的发动机胶垫，从而消除了怠速抖动大的问题。"
+    },
+    {
+      "id": "idle-rpm",
+      "question": "挖机60E怠速抖动案例中，发动机在什么转速以下抖动明显？",
+      "token_f1": 0.8571428571428571,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "cited_ids": [
+        "S2"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_002"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_001",
+        "doc_000_chunk_002",
+        "doc_000_chunk_003",
+        "doc_000_chunk_005"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_002"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 18,
+      "refused": false,
+      "answer_preview": "发动机在低于1500转以下抖动明显。"
+    },
+    {
+      "id": "temp-false-high",
+      "question": "水温高报警案例中，如何判断是真高温还是假高温？",
+      "token_f1": 0.23333333333333336,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "cited_ids": [
+        "S1"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_003"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_003",
+        "doc_000_chunk_004",
+        "doc_003_chunk_008",
+        "doc_003_chunk_037",
+        "doc_007_chunk_003",
+        "doc_007_chunk_007",
+        "doc_007_chunk_018",
+        "doc_007_chunk_021",
+        "doc_007_chunk_029"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_003"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 100,
+      "refused": false,
+      "answer_preview": "在水温高报警案例中，判断是真高温还是假高温的方法是首先检查实际水温，如果实际水温低于仪表显示的水温，那么可能是假高温。具体步骤如下：\n\n  检查实际水温，如果实际水温低于仪表显示的水温，判断为假高温。"
+    },
+    {
+      "id": "temp-repair",
+      "question": "水温高报警最终更换了什么？",
+      "token_f1": 0.25,
+      "citation_precision": 0.0,
+      "citation_recall": 0.0,
+      "cited_ids": [
+        "S2"
+      ],
+      "cited_chunk_ids": [
+        "doc_000_chunk_004"
+      ],
+      "retrieved_chunk_ids": [
+        "doc_000_chunk_000",
+        "doc_000_chunk_003",
+        "doc_000_chunk_004",
+        "doc_000_chunk_005",
+        "doc_000_chunk_006",
+        "doc_007_chunk_006",
+        "doc_007_chunk_007",
+        "doc_007_chunk_018",
+        "doc_007_chunk_029"
+      ],
+      "relevant_chunk_ids": [
+        "doc_000_chunk_005"
+      ],
+      "relevant_chunks": 1,
+      "retrieval_hit": true,
+      "citation_adherence": true,
+      "answer_chars": 11,
+      "refused": false,
+      "answer_preview": "最终更换了水温传感器。"
+    }
+  ]
+}

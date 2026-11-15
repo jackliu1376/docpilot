@@ -3,7 +3,7 @@ REST API 模块（使用FastAPI实现）
 """
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from dataclasses import asdict
 import tempfile
 import os
@@ -18,7 +18,7 @@ from config import (
     SILICONFLOW_API_KEY, MAGICK_API_KEY,
     DEEPSEEK_API_KEY, GLM_API_KEY,
     SEARCH_PROVIDER, TAVILY_API_KEY,
-    DEFAULT_MODEL_CHOICE, is_configured_api_key,
+    DEFAULT_MODEL_CHOICE, MODEL_CHOICES, is_configured_api_key,
 )
 from core.generator import answer_question
 from core.knowledge_base import knowledge_base
@@ -47,15 +47,24 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], allow_credentials=True,
+    allow_origins=["*"], allow_credentials=False,
     allow_methods=["*"], allow_headers=["*"],
 )
+
+
+SUPPORTED_MODEL_CHOICES = set(MODEL_CHOICES) | {"siliconflow", "magick"}
+
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
 
 
 class QuestionRequest(BaseModel):
     question: str
     enable_web_search: bool = False
     model_choice: str = DEFAULT_MODEL_CHOICE
+    history: List[ChatMessage] = Field(default_factory=list)
 
 
 class AnswerResponse(BaseModel):
@@ -108,11 +117,18 @@ async def upload_file(file: UploadFile = File(...)):
 @app.post("/api/ask", response_model=AnswerResponse)
 async def ask_question(req: QuestionRequest):
     """问答接口"""
-    if not req.question:
+    question = req.question.strip()
+    if not question:
         raise HTTPException(400, "问题不能为空")
+    if req.model_choice not in SUPPORTED_MODEL_CHOICES:
+        raise HTTPException(400, f"不支持的模型: {req.model_choice}")
     try:
         result = await asyncio.to_thread(
-            answer_question, req.question, req.enable_web_search, req.model_choice
+            answer_question,
+            question,
+            req.enable_web_search,
+            req.model_choice,
+            history=[message.model_dump() for message in req.history],
         )
         return {
             "answer": result.answer,

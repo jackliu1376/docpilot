@@ -60,13 +60,18 @@ EMBED_QUERY_PREFIX=为这个句子生成表示以用于检索相关文章：
 
 ## 答案级评测
 
-答案评测会跑完整的检索 + 生成链路，需要本地 Ollama 可用：
+答案评测会跑完整的检索 + 生成链路，需要至少一个可用后端（本地 Ollama 或云端）：
 
 ```bash
 # 先跑少量问题，避免 46 条全量耗时过长
 PYTHONIOENCODING=utf-8 python -m eval.run_answer_eval \
   --limit 10 --model-choice ollama \
   --json-out eval/results/answer.json
+
+# 云端后端
+PYTHONIOENCODING=utf-8 python -m eval.run_answer_eval \
+  --limit 10 --model-choice deepseek \
+  --json-out eval/results/answer_deepseek.json
 ```
 
 指标：
@@ -104,7 +109,20 @@ v2 做了三件事：Prompt 改为“先给结论、每条事实带 `[S1]`、无
 - 人工阅读 10 条回答：DeepSeek 基本全部正确；GLM 多数正确；3B 在 `temp-repair`（把“总电源”答成“水温传感器”）和 `idle-causes`（复述示例内容）上仍有错误。
 - 检索命中率三方都是 1.0，说明差距来自生成层，不是检索层。
 
-因此不能只用 Token F1 选模型。如果目标是回答质量与引用可信度，DeepSeek 目前最好；如果必须本地离线，3B 仍需要 Prompt v2.2 和更强的 grounding。
+因此不能只用 Token F1 选模型。如果目标是回答质量与引用可信度，DeepSeek 目前最好；如果必须本地离线，3B 已在 Prompt v2.2 上改善，但引用覆盖和 grounding 仍需加强。
+
+### Prompt v2.2（本地 3B，10 条）
+
+Prompt v2.2 去掉了“油品问题和缸压不足”的具体实体示例，改为只保留引用格式说明，并明确要求不要复用示例内容。同一批 10 条问题的结果：
+
+| 指标 | v2.1 | v2.2 |
+|---|---|---|
+| Token F1 | 0.4051 | **0.5177** |
+| Citation precision | 0.80 | 0.80 |
+| Citation recall | 0.70 | 0.70 |
+| Mean answer chars | 24.0 | 41.8 |
+
+`idle-*` 和 `temp-*` 等无关问题中不再出现“油品/缸压”示例实体；`blue-smoke-*` 中出现这些词是答案本身相关，不属于跨题污染。
 
 评测清洗逻辑已修复：`<details>` 思考内容会整段移除，不再污染 F1、answer_chars、refusal 和 citation 统计。
 
@@ -166,7 +184,7 @@ PYTHONIOENCODING=utf-8 python -m eval.run_answer_eval \
 
 **Fallback 说明**：DeepSeek 主裁判在部分问题上没有返回可解析的 JSON，现已自动切换到 GLM 裁判，并把 `max_tokens` 从 800 提高到 3000。3B 轮 fallback 使用率 20%，GLM 轮 60%。GLM 轮的 fallback 是 GLM 自评，可能带自我偏好；DeepSeek 候选由 GLM 裁判完成了 10/10 且无 fallback，是三方中最可靠的判分。
 
-最终结论：**DeepSeek > GLM > 3B**（回答正确性与忠实度），而不是 F1 给出的 3B 领先。若必须本地离线，3B 仍需要 Prompt v2.2 和更强的 grounding。
+最终结论：**DeepSeek > GLM > 3B**（回答正确性与忠实度），而不是 F1 给出的 3B 领先。若必须本地离线，3B 在 Prompt v2.2 上已明显改善 F1，但引用覆盖和 grounding 仍需加强。
 
 ## 指标说明
 
@@ -180,6 +198,6 @@ PYTHONIOENCODING=utf-8 python -m eval.run_answer_eval \
 ## 已知局限
 
 - 46 条问题覆盖 8 个文件；最佳配置下仍有 `float-bits` 等少数题目的相关 chunk 不在 top-10 候选内
-- 答案评测目前使用词面 F1 和引用匹配，没有接入 LLM faithfulness judge
+- 答案评测已支持可选的 LLM correctness/faithfulness judge；judge 不是绝对真值，建议固定 rubric 并抽样人工复核
 - 相关 chunk 通过答案片段匹配确定；片段应尽量短且唯一，避免跨 chunk 边界
 - `eval/data/` 中的课件和 PDF 是本地评测语料，是否纳入版本控制需自行判断
